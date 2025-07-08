@@ -15,7 +15,7 @@ define('BACKUP_PATH', ROOT_PATH . '/backups/');
 define('TEMP_PATH', ROOT_PATH . '/temp/');
 
 // URL paths
-define('BASE_URL', 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']));
+define('BASE_URL', 'http://localhost/hospital-ita-document-system');
 define('UPLOAD_URL', BASE_URL . '/uploads/documents/');
 define('ASSETS_URL', BASE_URL . '/assets/');
 
