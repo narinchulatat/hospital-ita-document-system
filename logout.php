@@ -1,9 +1,9 @@
 <?php
-require_once 'includes/auth.php';
+require_once 'includes/header.php';
 
 // Logout user
 logoutUser();
 
 // Redirect to login page
-redirectTo('/login.php');
+redirectTo(BASE_URL . '/login.php');
 ?>

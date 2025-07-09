@@ -109,14 +109,14 @@ function hasPermission($permission) {
  */
 function requireLogin() {
     if (!isLoggedIn()) {
-        redirectTo('/login.php');
+        redirect(BASE_URL . '/login.php');
         exit;
     }
     
     // Check session timeout
     if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > SESSION_TIMEOUT) {
         logoutUser();
-        redirectTo('/login.php?timeout=1');
+        redirect(BASE_URL . '/login.php?timeout=1');
         exit;
     }
     
@@ -216,12 +216,12 @@ function redirectTo($url) {
 function getRoleRedirectUrl($role) {
     switch ($role) {
         case ROLE_ADMIN:
-            return '/admin/';
+            return BASE_URL . '/admin/';
         case ROLE_STAFF:
-            return '/staff/';
+            return BASE_URL . '/staff/';
         case ROLE_APPROVER:
-            return '/approver/';
+            return BASE_URL . '/approver/';
         default:
-            return '/public/';
+            return BASE_URL . '/public/';
     }
 }
