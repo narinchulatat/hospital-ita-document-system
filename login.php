@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 เข้าสู่ระบบ
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
-                <?= htmlspecialchars($siteName) ?>
+                <?= htmlspecialchars(SITE_NAME) ?>
             </p>
         </div>
         
