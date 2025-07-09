@@ -10,11 +10,51 @@ class Database {
     
     private function __construct() {
         try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
-            $this->pdo = new PDO($dsn, DB_USER, DB_PASS, DB_OPTIONS);
+            if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                // Ensure directory exists for SQLite
+                $dbDir = dirname(DB_PATH);
+                if (!is_dir($dbDir)) {
+                    mkdir($dbDir, 0755, true);
+                }
+                
+                $dsn = "sqlite:" . DB_PATH;
+                $this->pdo = new PDO($dsn, null, null, DB_OPTIONS);
+                
+                // Enable foreign keys for SQLite
+                $this->pdo->exec("PRAGMA foreign_keys = ON");
+                
+            } else {
+                $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+                $this->pdo = new PDO($dsn, DB_USER, DB_PASS, DB_OPTIONS);
+            }
+            
+            // Test the connection
+            $this->pdo->query("SELECT 1");
+            
         } catch (PDOException $e) {
-            error_log("Database connection failed: " . $e->getMessage());
-            throw new Exception("Database connection failed");
+            $error = "Database connection failed: " . $e->getMessage();
+            
+            if (defined('DEBUG_MODE') && DEBUG_MODE) {
+                if (defined('DB_TYPE') && DB_TYPE === 'sqlite') {
+                    $error .= "\nSQLite path: " . DB_PATH;
+                } else {
+                    $error .= "\nDSN: mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME;
+                    $error .= "\nUser: " . DB_USER;
+                }
+            }
+            
+            error_log($error);
+            
+            // Try to provide helpful error messages
+            if (strpos($e->getMessage(), 'No such file or directory') !== false) {
+                throw new Exception("Cannot connect to MySQL server. Please ensure MySQL is running and accessible.");
+            } elseif (strpos($e->getMessage(), 'Access denied') !== false) {
+                throw new Exception("Database access denied. Please check your username and password.");
+            } elseif (strpos($e->getMessage(), 'Unknown database') !== false) {
+                throw new Exception("Database '" . DB_NAME . "' does not exist. Please create the database first.");
+            } else {
+                throw new Exception("Database connection failed: " . $e->getMessage());
+            }
         }
     }
     
@@ -27,6 +67,20 @@ class Database {
     
     public function getConnection() {
         return $this->pdo;
+    }
+    
+    /**
+     * Get database type
+     */
+    public function getDatabaseType() {
+        return defined('DB_TYPE') ? DB_TYPE : 'mysql';
+    }
+    
+    /**
+     * Check if using SQLite
+     */
+    public function isSQLite() {
+        return $this->getDatabaseType() === 'sqlite';
     }
     
     /**

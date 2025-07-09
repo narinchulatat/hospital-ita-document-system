@@ -54,6 +54,19 @@ define('ALLOWED_MIME_TYPES', [
 // Pagination
 define('ITEMS_PER_PAGE', 20);
 
+// Search settings
+define('SEARCH_MIN_LENGTH', 3);
+define('SEARCH_MAX_RESULTS', 100);
+
+// Cache settings
+define('CACHE_ENABLED', false);
+define('CACHE_DURATION', 300); // 5 minutes
+
+// System paths for includes
+define('CLASSES_PATH', ROOT_PATH . '/classes/');
+define('INCLUDES_PATH', ROOT_PATH . '/includes/');
+define('CONFIG_PATH', ROOT_PATH . '/config/');
+
 // Email settings
 define('SMTP_HOST', 'localhost');
 define('SMTP_PORT', 587);

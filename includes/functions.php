@@ -298,3 +298,87 @@ function isJson($string) {
     json_decode($string);
     return json_last_error() === JSON_ERROR_NONE;
 }
+
+/**
+ * Validate email address
+ */
+function validateEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+/**
+ * Generate secure random string
+ */
+function generateRandomString($length = 32) {
+    return bin2hex(random_bytes($length / 2));
+}
+
+/**
+ * Get client IP address
+ */
+function getClientIP() {
+    $ipKeys = ['HTTP_CF_CONNECTING_IP', 'HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
+    
+    foreach ($ipKeys as $key) {
+        if (array_key_exists($key, $_SERVER) === true) {
+            foreach (explode(',', $_SERVER[$key]) as $ip) {
+                $ip = trim($ip);
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false) {
+                    return $ip;
+                }
+            }
+        }
+    }
+    
+    return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+}
+
+/**
+ * Redirect to URL
+ */
+function redirect($url, $statusCode = 302) {
+    header('Location: ' . $url, true, $statusCode);
+    exit;
+}
+
+/**
+ * Show alert message
+ */
+function showAlert($message, $type = 'info') {
+    $_SESSION['alert_message'] = $message;
+    $_SESSION['alert_type'] = $type;
+}
+
+/**
+ * Get and clear alert message
+ */
+function getAlert() {
+    if (isset($_SESSION['alert_message'])) {
+        $alert = [
+            'message' => $_SESSION['alert_message'],
+            'type' => $_SESSION['alert_type'] ?? 'info'
+        ];
+        unset($_SESSION['alert_message'], $_SESSION['alert_type']);
+        return $alert;
+    }
+    return null;
+}
+
+/**
+ * Escape output for HTML
+ */
+function e($value) {
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Debug function
+ */
+function dd($value) {
+    if (defined('DEBUG_MODE') && DEBUG_MODE) {
+        echo '<pre>';
+        var_dump($value);
+        echo '</pre>';
+        exit;
+    }
+}
