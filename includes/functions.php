@@ -166,73 +166,26 @@ function sendNotification($userId, $title, $message, $type = NOTIF_TYPE_INFO, $a
  * Get setting value
  */
 function getSetting($key, $default = null) {
-    static $settings = null;
+    static $settingClass = null;
     
-    if ($settings === null) {
-        try {
-            $db = Database::getInstance();
-            $allSettings = $db->fetchAll("SELECT `key`, `value`, `type` FROM settings");
-            
-            foreach ($allSettings as $setting) {
-                $value = $setting['value'];
-                
-                // Convert value based on type
-                switch ($setting['type']) {
-                    case SETTING_INTEGER:
-                        $value = (int)$value;
-                        break;
-                    case SETTING_BOOLEAN:
-                        $value = (bool)$value;
-                        break;
-                    case SETTING_JSON:
-                        $value = json_decode($value, true);
-                        break;
-                }
-                
-                $settings[$setting['key']] = $value;
-            }
-        } catch (Exception $e) {
-            error_log("Failed to load settings: " . $e->getMessage());
-            $settings = [];
-        }
+    if ($settingClass === null) {
+        $settingClass = new Setting();
     }
     
-    return $settings[$key] ?? $default;
+    return $settingClass->get($key, $default);
 }
 
 /**
  * Update setting value
  */
 function updateSetting($key, $value) {
-    try {
-        $db = Database::getInstance();
-        
-        // Get setting type
-        $setting = $db->fetch("SELECT `type` FROM settings WHERE `key` = ?", [$key]);
-        if (!$setting) {
-            return false;
-        }
-        
-        // Convert value based on type
-        switch ($setting['type']) {
-            case SETTING_JSON:
-                $value = json_encode($value);
-                break;
-            case SETTING_BOOLEAN:
-                $value = $value ? 1 : 0;
-                break;
-        }
-        
-        $data = [
-            'value' => $value,
-            'updated_by' => getCurrentUserId()
-        ];
-        
-        return $db->update('settings', $data, ['key' => $key]);
-    } catch (Exception $e) {
-        error_log("Failed to update setting: " . $e->getMessage());
-        return false;
+    static $settingClass = null;
+    
+    if ($settingClass === null) {
+        $settingClass = new Setting();
     }
+    
+    return $settingClass->set($key, $value);
 }
 
 /**

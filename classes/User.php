@@ -174,7 +174,7 @@ class User {
     /**
      * Increment failed login attempts
      */
-    private function incrementFailedAttempts($userId) {
+    public function incrementFailedAttempts($userId) {
         $query = "UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?";
         $this->db->execute($query, [$userId]);
         
@@ -189,7 +189,7 @@ class User {
     /**
      * Reset failed login attempts
      */
-    private function resetFailedAttempts($userId) {
+    public function resetFailedAttempts($userId) {
         $data = [
             'failed_attempts' => 0,
             'locked_until' => null
@@ -200,7 +200,7 @@ class User {
     /**
      * Update last login time
      */
-    private function updateLastLogin($userId) {
+    public function updateLastLogin($userId) {
         $this->db->update('users', ['last_login' => date('Y-m-d H:i:s')], ['id' => $userId]);
     }
     
@@ -241,5 +241,79 @@ class User {
         
         $result = $this->db->fetch($query, $params);
         return $result && $result['count'] > 0;
+    }
+    
+    /**
+     * Get users by role
+     */
+    public function getUsersByRole($roleId, $activeOnly = true) {
+        $query = "SELECT u.*, r.name as role_name 
+                  FROM users u 
+                  JOIN roles r ON u.role_id = r.id 
+                  WHERE u.role_id = ?";
+        $params = [$roleId];
+        
+        if ($activeOnly) {
+            $query .= " AND u.status = 'active'";
+        }
+        
+        $query .= " ORDER BY u.first_name, u.last_name";
+        
+        return $this->db->fetchAll($query, $params);
+    }
+    
+    /**
+     * Get user activity summary
+     */
+    public function getUserActivity($userId, $days = 30) {
+        $query = "SELECT 
+                    action,
+                    COUNT(*) as count,
+                    DATE(created_at) as activity_date
+                  FROM activity_logs 
+                  WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                  GROUP BY action, DATE(created_at)
+                  ORDER BY activity_date DESC, action";
+        
+        return $this->db->fetchAll($query, [$userId, $days]);
+    }
+    
+    /**
+     * Update user status
+     */
+    public function updateStatus($userId, $status) {
+        $oldUser = $this->getById($userId);
+        $result = $this->db->update('users', ['status' => $status], ['id' => $userId]);
+        
+        if ($result) {
+            logActivity(ACTION_UPDATE, 'users', $userId, $oldUser, ['status' => $status]);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Lock user account
+     */
+    public function lockUser($userId, $lockDuration = null) {
+        $lockUntil = $lockDuration ? 
+            date('Y-m-d H:i:s', time() + $lockDuration) : 
+            date('Y-m-d H:i:s', time() + LOCKOUT_DURATION);
+            
+        return $this->db->update('users', [
+            'status' => STATUS_LOCKED,
+            'locked_until' => $lockUntil
+        ], ['id' => $userId]);
+    }
+    
+    /**
+     * Unlock user account
+     */
+    public function unlockUser($userId) {
+        return $this->db->update('users', [
+            'status' => STATUS_ACTIVE,
+            'locked_until' => null,
+            'failed_attempts' => 0
+        ], ['id' => $userId]);
     }
 }

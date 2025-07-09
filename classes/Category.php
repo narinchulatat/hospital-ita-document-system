@@ -335,4 +335,121 @@ class Category {
         $result = $this->db->fetch($query, $params);
         return $result && $result['count'] > 0;
     }
+    
+    /**
+     * Get children categories
+     */
+    public function getChildren($parentId, $activeOnly = true) {
+        $query = "SELECT c.*, 
+                         (SELECT COUNT(*) FROM categories WHERE parent_id = c.id" . 
+                         ($activeOnly ? " AND is_active = 1" : "") . ") as children_count,
+                         (SELECT COUNT(*) FROM documents WHERE category_id = c.id) as documents_count
+                  FROM categories c
+                  WHERE c.parent_id = ?";
+        
+        if ($activeOnly) {
+            $query .= " AND c.is_active = 1";
+        }
+        
+        $query .= " ORDER BY c.sort_order, c.name";
+        
+        return $this->db->fetchAll($query, [$parentId]);
+    }
+    
+    /**
+     * Get parent categories chain
+     */
+    public function getParents($categoryId) {
+        $parents = [];
+        $currentId = $categoryId;
+        
+        while ($currentId) {
+            $category = $this->getById($currentId);
+            if ($category && $category['parent_id']) {
+                $parent = $this->getById($category['parent_id']);
+                if ($parent) {
+                    array_unshift($parents, $parent);
+                    $currentId = $parent['parent_id'];
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        
+        return $parents;
+    }
+    
+    /**
+     * Update category order (alias for updateSortOrder)
+     */
+    public function updateOrder($categoryId, $order) {
+        return $this->updateSortOrder($categoryId, $order);
+    }
+    
+    /**
+     * Get category path as string
+     */
+    public function getCategoryPath($categoryId, $separator = ' > ') {
+        $breadcrumb = $this->getBreadcrumb($categoryId);
+        $names = array_column($breadcrumb, 'name');
+        return implode($separator, $names);
+    }
+    
+    /**
+     * Move category to different parent
+     */
+    public function moveCategory($categoryId, $newParentId = null) {
+        $category = $this->getById($categoryId);
+        if (!$category) {
+            return false;
+        }
+        
+        // Calculate new level
+        $newLevel = 1;
+        if ($newParentId) {
+            $newParent = $this->getById($newParentId);
+            if (!$newParent) {
+                return false;
+            }
+            $newLevel = $newParent['level'] + 1;
+            
+            // Prevent moving to descendant
+            $breadcrumb = $this->getBreadcrumb($newParentId);
+            foreach ($breadcrumb as $ancestor) {
+                if ($ancestor['id'] == $categoryId) {
+                    throw new Exception('ไม่สามารถย้ายหมวดหมู่ไปยังหมวดหมู่ย่อยของตัวเองได้');
+                }
+            }
+        }
+        
+        // Update category
+        $data = [
+            'parent_id' => $newParentId,
+            'level' => $newLevel
+        ];
+        
+        $result = $this->update($categoryId, $data);
+        
+        if ($result) {
+            // Update levels of all descendants
+            $this->updateDescendantLevels($categoryId, $newLevel);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Update levels of descendant categories
+     */
+    private function updateDescendantLevels($categoryId, $parentLevel) {
+        $children = $this->getChildren($categoryId, false);
+        
+        foreach ($children as $child) {
+            $newLevel = $parentLevel + 1;
+            $this->db->update('categories', ['level' => $newLevel], ['id' => $child['id']]);
+            $this->updateDescendantLevels($child['id'], $newLevel);
+        }
+    }
 }

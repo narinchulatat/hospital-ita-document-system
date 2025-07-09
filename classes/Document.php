@@ -382,6 +382,13 @@ class Document {
     }
     
     /**
+     * Update download count (alias for consistency)
+     */
+    public function updateDownloadCount($id) {
+        return $this->incrementDownloadCount($id);
+    }
+    
+    /**
      * Get document versions
      */
     public function getVersions($documentId) {
@@ -433,5 +440,89 @@ class Document {
     public function getPendingDocuments($page = 1, $limit = ITEMS_PER_PAGE) {
         $filters = ['status' => DOC_STATUS_PENDING];
         return $this->getAll($filters, $page, $limit);
+    }
+    
+    /**
+     * Get document statistics
+     */
+    public function getStatistics() {
+        $stats = [];
+        
+        // Total documents
+        $stats['total'] = $this->db->getRowCount('documents');
+        
+        // Documents by status
+        foreach ([DOC_STATUS_DRAFT, DOC_STATUS_PENDING, DOC_STATUS_APPROVED, DOC_STATUS_REJECTED, DOC_STATUS_ARCHIVED] as $status) {
+            $stats["status_{$status}"] = $this->db->getRowCount('documents', ['status' => $status]);
+        }
+        
+        // Public documents
+        $stats['public'] = $this->db->getRowCount('documents', ['is_public' => 1]);
+        
+        // Documents uploaded today
+        $today = date('Y-m-d');
+        $query = "SELECT COUNT(*) as count FROM documents WHERE DATE(created_at) = ?";
+        $result = $this->db->fetch($query, [$today]);
+        $stats['uploaded_today'] = $result ? (int)$result['count'] : 0;
+        
+        // Most downloaded documents
+        $query = "SELECT id, title, download_count FROM documents 
+                  WHERE status = 'approved' AND is_public = 1 
+                  ORDER BY download_count DESC LIMIT 5";
+        $stats['most_downloaded'] = $this->db->fetchAll($query);
+        
+        return $stats;
+    }
+    
+    /**
+     * Search documents
+     */
+    public function searchDocuments($searchTerm, $filters = [], $page = 1, $limit = ITEMS_PER_PAGE) {
+        $filters['search'] = $searchTerm;
+        return $this->getAll($filters, $page, $limit);
+    }
+    
+    /**
+     * Get documents by category
+     */
+    public function getByCategory($categoryId, $includeSubcategories = false, $page = 1, $limit = ITEMS_PER_PAGE) {
+        if ($includeSubcategories) {
+            // Get all subcategory IDs
+            $category = new Category();
+            $subcategories = $category->getTree($categoryId);
+            $categoryIds = [$categoryId];
+            
+            $this->extractCategoryIds($subcategories, $categoryIds);
+            
+            $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+            $offset = ($page - 1) * $limit;
+            
+            $query = "SELECT d.*, c.name as category_name,
+                             u1.first_name as uploader_first_name, u1.last_name as uploader_last_name
+                      FROM documents d
+                      JOIN categories c ON d.category_id = c.id
+                      JOIN users u1 ON d.uploaded_by = u1.id
+                      WHERE d.category_id IN ({$placeholders})
+                      ORDER BY d.created_at DESC
+                      LIMIT ? OFFSET ?";
+            
+            $params = array_merge($categoryIds, [$limit, $offset]);
+            return $this->db->fetchAll($query, $params);
+        } else {
+            $filters = ['category_id' => $categoryId];
+            return $this->getAll($filters, $page, $limit);
+        }
+    }
+    
+    /**
+     * Extract category IDs recursively
+     */
+    private function extractCategoryIds($categories, &$ids) {
+        foreach ($categories as $category) {
+            $ids[] = $category['id'];
+            if (!empty($category['children'])) {
+                $this->extractCategoryIds($category['children'], $ids);
+            }
+        }
     }
 }

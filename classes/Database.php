@@ -170,4 +170,76 @@ class Database {
         $stmt = $this->execute($query, $params);
         return $stmt->rowCount();
     }
+    
+    /**
+     * Quote a string for safe SQL usage
+     */
+    public function quote($string) {
+        return $this->pdo->quote($string);
+    }
+    
+    /**
+     * Bulk insert data into table
+     */
+    public function bulkInsert($tableName, $data) {
+        if (empty($data)) {
+            return 0;
+        }
+        
+        $firstRow = reset($data);
+        $fields = array_keys($firstRow);
+        $placeholders = '(' . implode(', ', array_fill(0, count($fields), '?')) . ')';
+        $allPlaceholders = implode(', ', array_fill(0, count($data), $placeholders));
+        
+        $query = "INSERT INTO `{$tableName}` (`" . implode('`, `', $fields) . "`) VALUES " . $allPlaceholders;
+        
+        $params = [];
+        foreach ($data as $row) {
+            foreach ($fields as $field) {
+                $params[] = $row[$field] ?? null;
+            }
+        }
+        
+        $stmt = $this->execute($query, $params);
+        return $stmt->rowCount();
+    }
+    
+    /**
+     * Truncate table
+     */
+    public function truncate($tableName) {
+        try {
+            $query = "TRUNCATE TABLE `{$tableName}`";
+            return $this->execute($query);
+        } catch (PDOException $e) {
+            error_log("Table truncation failed: " . $e->getMessage());
+            throw new Exception("Table truncation failed");
+        }
+    }
+    
+    /**
+     * Get database size
+     */
+    public function getDatabaseSize() {
+        $query = "SELECT 
+                    ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
+                  FROM information_schema.tables 
+                  WHERE table_schema = ?";
+        
+        $result = $this->fetch($query, [DB_NAME]);
+        return $result ? (float)$result['size_mb'] : 0;
+    }
+    
+    /**
+     * Optimize table
+     */
+    public function optimizeTable($tableName) {
+        try {
+            $query = "OPTIMIZE TABLE `{$tableName}`";
+            return $this->execute($query);
+        } catch (PDOException $e) {
+            error_log("Table optimization failed: " . $e->getMessage());
+            throw new Exception("Table optimization failed");
+        }
+    }
 }

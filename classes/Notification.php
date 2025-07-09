@@ -225,4 +225,101 @@ class Notification {
             return $this->sendToUsers($userIds, $title, $message, $type);
         }
     }
+    
+    /**
+     * Get total notification count for user
+     */
+    public function getTotalCount($userId, $unreadOnly = false) {
+        $query = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ?";
+        $params = [$userId];
+        
+        if ($unreadOnly) {
+            $query .= " AND is_read = 0";
+        }
+        
+        $result = $this->db->fetch($query, $params);
+        return $result ? (int)$result['count'] : 0;
+    }
+    
+    /**
+     * Delete old notifications (alias for cleanOldNotifications)
+     */
+    public function deleteOld($daysOld = 30) {
+        return $this->cleanOldNotifications($daysOld);
+    }
+    
+    /**
+     * Get notification by ID
+     */
+    public function getById($notificationId, $userId = null) {
+        $query = "SELECT * FROM notifications WHERE id = ?";
+        $params = [$notificationId];
+        
+        if ($userId) {
+            $query .= " AND user_id = ?";
+            $params[] = $userId;
+        }
+        
+        return $this->db->fetch($query, $params);
+    }
+    
+    /**
+     * Bulk mark notifications as read
+     */
+    public function bulkMarkAsRead($notificationIds, $userId) {
+        if (empty($notificationIds)) {
+            return 0;
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($notificationIds), '?'));
+        $query = "UPDATE notifications 
+                  SET is_read = 1, read_at = ? 
+                  WHERE id IN ({$placeholders}) AND user_id = ?";
+        
+        $params = [date('Y-m-d H:i:s')];
+        $params = array_merge($params, $notificationIds);
+        $params[] = $userId;
+        
+        $stmt = $this->db->execute($query, $params);
+        return $stmt->rowCount();
+    }
+    
+    /**
+     * Bulk delete notifications
+     */
+    public function bulkDelete($notificationIds, $userId) {
+        if (empty($notificationIds)) {
+            return 0;
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($notificationIds), '?'));
+        $query = "DELETE FROM notifications WHERE id IN ({$placeholders}) AND user_id = ?";
+        
+        $params = $notificationIds;
+        $params[] = $userId;
+        
+        $stmt = $this->db->execute($query, $params);
+        return $stmt->rowCount();
+    }
+    
+    /**
+     * Get notifications by type
+     */
+    public function getByType($type, $userId = null, $page = 1, $limit = 20) {
+        $offset = ($page - 1) * $limit;
+        
+        $query = "SELECT * FROM notifications WHERE type = ?";
+        $params = [$type];
+        
+        if ($userId) {
+            $query .= " AND user_id = ?";
+            $params[] = $userId;
+        }
+        
+        $query .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        
+        return $this->db->fetchAll($query, $params);
+    }
 }
