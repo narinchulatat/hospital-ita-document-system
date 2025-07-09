@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 เข้าสู่ระบบ
             </h2>
             <p class="mt-2 text-center text-sm text-gray-600">
-                <?= htmlspecialchars($siteName) ?>
+                <?= htmlspecialchars(SITE_NAME) ?>
             </p>
         </div>
         
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 class="text-sm font-medium text-blue-800 mb-2">ข้อมูลการเข้าสู่ระบบสำหรับทดสอบ:</h4>
             <div class="text-xs text-blue-700 space-y-1">
-                <div><strong>ผู้ดูแลระบบ:</strong> admin / admin</div>
+                <div><strong>ผู้ดูแลระบบ:</strong> admin / admin123</div>
                 <div class="text-blue-600 italic">* สามารถใช้ข้อมูลนี้สำหรับทดสอบระบบ</div>
             </div>
         </div>
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (demoInfo) {
         demoInfo.addEventListener('click', function() {
             document.getElementById('username').value = 'admin';
-            document.getElementById('password').value = 'admin';
+            document.getElementById('password').value = 'admin123';
         });
     }
 });

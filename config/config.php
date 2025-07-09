@@ -8,6 +8,19 @@ define('SITE_NAME', 'ระบบจัดเก็บเอกสาร ITA โ
 define('SITE_DESCRIPTION', 'ระบบจัดการเอกสารสำหรับโรงพยาบาล');
 define('SITE_VERSION', '1.0.0');
 
+// Debug mode (set to false in production)
+define('DEBUG_MODE', false);
+define('SHOW_ERRORS', false);
+
+// Error reporting
+if (DEBUG_MODE) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
+
 // Directory paths
 define('ROOT_PATH', dirname(__DIR__));
 define('UPLOAD_PATH', ROOT_PATH . '/uploads/documents/');

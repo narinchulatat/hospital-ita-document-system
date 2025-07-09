@@ -91,8 +91,7 @@
 
 ```
 /
-├── database/
-│   └── ita_hospital_db.sql          # โครงสร้างฐานข้อมูล
+├── ita_hospital_db.sql                  # โครงสร้างฐานข้อมูลหลัก
 ├── config/
 │   ├── config.php                   # การตั้งค่าหลัก
 │   ├── constants.php                # ค่าคงที่
@@ -139,7 +138,7 @@
 
 2. **Import ฐานข้อมูล**
    ```sql
-   mysql -u root -p < database/ita_hospital_db.sql
+   mysql -u root -p < ita_hospital_db.sql
    ```
 
 3. **ตั้งค่าฐานข้อมูล**
@@ -161,17 +160,47 @@
 5. **เข้าใช้งาน**
    - URL: `http://your-domain/`
    - Username: `admin`
-   - Password: `admin`
+   - Password: `admin123`
 
 ## Default Login Credentials
 - **Username**: admin
-- **Password**: admin
+- **Password**: admin123
 - **Role**: Administrator (สิทธิ์เต็ม)
+
+⚠️ **สำคัญ**: กรุณาเปลี่ยนรหัสผ่านเริ่มต้นหลังจากติดตั้งเสร็จสิ้น
+
+## การแก้ไขปัญหาทั่วไป
+
+### ปัญหาการเชื่อมต่อฐานข้อมูล
+```php
+// ตรวจสอบการตั้งค่าใน config/database.php
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'ita_hospital_db');
+define('DB_USER', 'root');          // เปลี่ยนตามการตั้งค่าของคุณ
+define('DB_PASS', '');              // เปลี่ยนตามการตั้งค่าของคุณ
+```
+
+### ปัญหาการเข้าสู่ระบบ
+- ตรวจสอบว่าใช้ username: `admin` และ password: `admin123`
+- ตรวจสอบว่าฐานข้อมูลมีข้อมูลผู้ใช้
+- ตรวจสอบสิทธิ์การเข้าถึงไฟล์และโฟลเดอร์
+
+### การตั้งค่า BASE_URL
+```php
+// ใน config/config.php ปรับ BASE_URL ให้ตรงกับที่อยู่เว็บไซต์
+define('BASE_URL', 'http://localhost/hospital-ita-document-system');
+```
+
+### สิทธิ์ไฟล์และโฟลเดอร์
+```bash
+chmod 755 uploads/ backups/ temp/
+chmod 644 config/*.php
+```
 
 ## การใช้งานแต่ละบทบาท
 
 ### สำหรับ Admin
-1. เข้าสู่ระบบด้วย admin/admin
+1. เข้าสู่ระบบด้วย admin/admin123
 2. จัดการผู้ใช้ในเมนู "จัดการผู้ใช้"
 3. ตั้งค่าหมวดหมู่ในเมนู "จัดการหมวดหมู่"
 4. ดูสถิติในหน้า Dashboard
