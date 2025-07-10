@@ -1,9 +1,6 @@
 <?php
 $pageTitle = 'แดชบอร์ดผู้อนุมัติ';
-require_once '../includes/header.php';
-
-// Require approver role
-requireRole(ROLE_APPROVER);
+require_once 'includes/header.php';
 
 try {
     $document = new Document();
@@ -488,4 +485,4 @@ document.getElementById('quickRejectionModal').addEventListener('click', functio
 });
 </script>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php require_once 'includes/footer.php'; ?>
