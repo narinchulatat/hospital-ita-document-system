@@ -298,3 +298,134 @@ function isJson($string) {
     json_decode($string);
     return json_last_error() === JSON_ERROR_NONE;
 }
+
+/**
+ * Get file type CSS class for styling
+ */
+function getFileTypeClass($fileType) {
+    $classes = [
+        'pdf' => 'pdf',
+        'doc' => 'doc',
+        'docx' => 'doc',
+        'xls' => 'excel',
+        'xlsx' => 'excel',
+        'jpg' => 'image',
+        'jpeg' => 'image',
+        'png' => 'image',
+        'gif' => 'image'
+    ];
+    
+    return $classes[strtolower($fileType)] ?? 'default';
+}
+
+/**
+ * Check if user can approve documents (approver role)
+ */
+function canApproveDocuments() {
+    return isApprover() || isAdmin();
+}
+
+/**
+ * Get document status badge HTML
+ */
+function getDocumentStatusBadge($status) {
+    global $DOC_STATUS_NAMES;
+    
+    $classes = [
+        DOC_STATUS_DRAFT => 'badge-secondary',
+        DOC_STATUS_PENDING => 'badge-warning',
+        DOC_STATUS_APPROVED => 'badge-success',
+        DOC_STATUS_REJECTED => 'badge-danger',
+        DOC_STATUS_ARCHIVED => 'badge-info'
+    ];
+    
+    $class = $classes[$status] ?? 'badge-secondary';
+    $text = $DOC_STATUS_NAMES[$status] ?? $status;
+    
+    return '<span class="badge ' . $class . '">' . htmlspecialchars($text) . '</span>';
+}
+
+/**
+ * Check if document needs urgent attention
+ */
+function isDocumentUrgent($document) {
+    // Check if marked as urgent
+    if (isset($document['is_urgent']) && $document['is_urgent']) {
+        return true;
+    }
+    
+    // Check if pending for more than 7 days
+    if ($document['status'] === DOC_STATUS_PENDING) {
+        $daysPending = floor((time() - strtotime($document['created_at'])) / 86400);
+        return $daysPending > 7;
+    }
+    
+    return false;
+}
+
+/**
+ * Get time difference in human readable format
+ */
+function getTimeAgo($datetime) {
+    $time = time() - strtotime($datetime);
+    
+    if ($time < 60) {
+        return 'เมื่อสักครู่';
+    } elseif ($time < 3600) {
+        $minutes = floor($time / 60);
+        return $minutes . ' นาทีที่แล้ว';
+    } elseif ($time < 86400) {
+        $hours = floor($time / 3600);
+        return $hours . ' ชั่วโมงที่แล้ว';
+    } elseif ($time < 2592000) {
+        $days = floor($time / 86400);
+        return $days . ' วันที่แล้ว';
+    } else {
+        return formatThaiDate($datetime);
+    }
+}
+
+/**
+ * Truncate text with ellipsis
+ */
+function truncateText($text, $length = 100, $ellipsis = '...') {
+    if (strlen($text) <= $length) {
+        return $text;
+    }
+    
+    return substr($text, 0, $length) . $ellipsis;
+}
+
+/**
+ * Generate breadcrumb navigation
+ */
+function generateBreadcrumbs($items) {
+    if (empty($items)) {
+        return '';
+    }
+    
+    $html = '<nav class="flex mb-6" aria-label="Breadcrumb">';
+    $html .= '<ol class="inline-flex items-center space-x-1 md:space-x-3">';
+    
+    foreach ($items as $index => $item) {
+        $isLast = $index === count($items) - 1;
+        
+        $html .= '<li class="inline-flex items-center">';
+        
+        if ($index > 0) {
+            $html .= '<svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>';
+        }
+        
+        if ($isLast) {
+            $html .= '<span class="text-gray-500 ml-1 md:ml-2 text-sm font-medium">' . htmlspecialchars($item['title']) . '</span>';
+        } else {
+            $html .= '<a href="' . htmlspecialchars($item['url']) . '" class="text-gray-700 hover:text-blue-600 ml-1 md:ml-2 text-sm font-medium">' . htmlspecialchars($item['title']) . '</a>';
+        }
+        
+        $html .= '</li>';
+    }
+    
+    $html .= '</ol></nav>';
+    
+    return $html;
+}
