@@ -1,0 +1,454 @@
+/* Reports CSS */
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Report cards animation */
+.report-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.chart-container canvas {
+    max-height: 400px;
+}
+
+/* Statistics cards */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3B82F6, #60A5FA);
+}
+
+.stat-card.success::before {
+    background: linear-gradient(90deg, #10B981, #34D399);
+}
+
+.stat-card.warning::before {
+    background: linear-gradient(90deg, #F59E0B, #FBBF24);
+}
+
+.stat-card.danger::before {
+    background: linear-gradient(90deg, #EF4444, #F87171);
+}
+
+.stat-card.info::before {
+    background: linear-gradient(90deg, #06B6D4, #22D3EE);
+}
+
+/* Data tables */
+.dataTables_wrapper {
+    font-family: 'Sarabun', sans-serif;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-left: 8px;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin: 0 8px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 8px 12px;
+    margin: 0 2px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #3B82F6;
+    border-color: #3B82F6;
+    color: white;
+}
+
+/* Filter section */
+.filter-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.filter-section .filter-group label {
+    color: white;
+    font-weight: 500;
+}
+
+.filter-section .filter-group select,
+.filter-section .filter-group input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.filter-section .filter-group select:focus,
+.filter-section .filter-group input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.filter-section .filter-group select option {
+    background: #374151;
+    color: white;
+}
+
+.filter-section .filter-group button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.filter-section .filter-group button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Export buttons */
+.export-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.export-btn i {
+    margin-right: 8px;
+}
+
+.export-btn.pdf {
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.export-btn.pdf:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.export-btn.excel {
+    color: #059669;
+    border-color: #a7f3d0;
+}
+
+.export-btn.excel:hover {
+    background: #ecfdf5;
+    border-color: #6ee7b7;
+}
+
+.export-btn.csv {
+    color: #7c3aed;
+    border-color: #ddd6fe;
+}
+
+.export-btn.csv:hover {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+}
+
+.export-btn.json {
+    color: #ea580c;
+    border-color: #fed7aa;
+}
+
+.export-btn.json:hover {
+    background: #fff7ed;
+    border-color: #fdba74;
+}
+
+.export-btn.xml {
+    color: #0891b2;
+    border-color: #a5f3fc;
+}
+
+.export-btn.xml:hover {
+    background: #ecfeff;
+    border-color: #67e8f9;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3B82F6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Progress bars */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3B82F6, #60A5FA);
+    transition: width 0.3s ease;
+}
+
+.progress-fill.success {
+    background: linear-gradient(90deg, #10B981, #34D399);
+}
+
+.progress-fill.warning {
+    background: linear-gradient(90deg, #F59E0B, #FBBF24);
+}
+
+.progress-fill.danger {
+    background: linear-gradient(90deg, #EF4444, #F87171);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    
+    .chart-container {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .filter-group {
+        min-width: 100%;
+    }
+    
+    .export-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .export-btn {
+        justify-content: center;
+    }
+    
+    .chart-container {
+        padding: 10px;
+    }
+    
+    .chart-container canvas {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stat-card {
+        padding: 15px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .sidebar-reports {
+        padding: 15px;
+    }
+    
+    .nav-link {
+        padding: 8px 12px;
+        font-size: 0.875rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .sidebar-reports,
+    .export-buttons,
+    .filter-section,
+    nav {
+        display: none;
+    }
+    
+    .chart-container {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    .report-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        break-inside: avoid;
+    }
+    
+    .stat-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1f2937;
+        color: #f9fafb;
+    }
+    
+    .report-card,
+    .chart-container,
+    .stat-card {
+        background: #374151;
+        color: #f9fafb;
+    }
+    
+    .sidebar-reports {
+        background: #374151;
+    }
+    
+    .nav-link {
+        color: #d1d5db;
+    }
+    
+    .nav-link:hover,
+    .nav-link.active {
+        background: #4b5563;
+        color: #60a5fa;
+    }
+}
+
+/* Accessibility improvements */
+.nav-link:focus,
+.export-btn:focus,
+button:focus,
+input:focus,
+select:focus {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .report-card,
+    .chart-container,
+    .stat-card {
+        border: 2px solid #000;
+    }
+    
+    .nav-link {
+        border: 1px solid transparent;
+    }
+    
+    .nav-link:hover,
+    .nav-link.active {
+        border-color: #000;
+    }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .loading-spinner {
+        animation: none;
+    }
+}
