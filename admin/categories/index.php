@@ -30,8 +30,8 @@ if (!empty($search)) {
 }
 
 if (!empty($status_filter)) {
-    $where_conditions[] = "c.status = :status";
-    $params[':status'] = $status_filter;
+    $where_conditions[] = "c.is_active = :status";
+    $params[':status'] = $status_filter === 'active' ? 1 : 0;
 }
 
 if ($parent_filter !== '') {
@@ -82,9 +82,9 @@ $parent_categories = $parent_categories_stmt->fetchAll();
 // Get statistics
 $stats = [
     'total' => $db->query("SELECT COUNT(*) as count FROM categories")->fetch()['count'],
-    'active' => $db->query("SELECT COUNT(*) as count FROM categories WHERE status = 'active'")->fetch()['count'],
-    'inactive' => $db->query("SELECT COUNT(*) as count FROM categories WHERE status = 'inactive'")->fetch()['count'],
-    'featured' => $db->query("SELECT COUNT(*) as count FROM categories WHERE is_featured = 1")->fetch()['count']
+    'active' => $db->query("SELECT COUNT(*) as count FROM categories WHERE is_active = 1")->fetch()['count'],
+    'inactive' => $db->query("SELECT COUNT(*) as count FROM categories WHERE is_active = 0")->fetch()['count'],
+    'main' => $db->query("SELECT COUNT(*) as count FROM categories WHERE parent_id IS NULL")->fetch()['count']
 ];
 ?>
 
@@ -209,13 +209,13 @@ $stats = [
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-star text-yellow-600"></i>
+                        <i class="fas fa-sitemap text-yellow-600"></i>
                     </div>
                 </div>
                 <div class="ml-5 w-0 flex-1">
                     <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">หมวดหมู่เด่น</dt>
-                        <dd class="text-lg font-medium text-gray-900"><?= number_format($stats['featured']) ?></dd>
+                        <dt class="text-sm font-medium text-gray-500 truncate">หมวดหมู่หลัก</dt>
+                        <dd class="text-lg font-medium text-gray-900"><?= number_format($stats['main']) ?></dd>
                     </dl>
                 </div>
             </div>
@@ -247,10 +247,8 @@ $stats = [
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
-                                    <div class="h-10 w-10 rounded-lg flex items-center justify-center" 
-                                         style="background-color: <?= htmlspecialchars($cat['color']) ?>20;">
-                                        <i class="fas fa-<?= htmlspecialchars($cat['icon']) ?>" 
-                                           style="color: <?= htmlspecialchars($cat['color']) ?>"></i>
+                                    <div class="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-100">
+                                        <i class="fas fa-folder text-blue-600"></i>
                                     </div>
                                 </div>
                                 <div class="ml-4">
@@ -259,12 +257,9 @@ $stats = [
                                         $indent = str_repeat('&nbsp;&nbsp;&nbsp;', ($cat['level'] - 1) * 2);
                                         echo $indent . htmlspecialchars($cat['name']);
                                         ?>
-                                        <?php if ($cat['is_featured']): ?>
-                                        <i class="fas fa-star text-yellow-500 ml-1" title="หมวดหมู่เด่น"></i>
-                                        <?php endif; ?>
                                     </div>
                                     <div class="text-sm text-gray-500">
-                                        <?= htmlspecialchars($cat['slug']) ?>
+                                        <?= htmlspecialchars($cat['description'] ?? '') ?>
                                     </div>
                                 </div>
                             </div>
@@ -273,8 +268,8 @@ $stats = [
                             <?= $cat['parent_name'] ? htmlspecialchars($cat['parent_name']) : '-' ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?= $cat['status'] === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' ?>">
-                                <?= $cat['status'] === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน' ?>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?= $cat['is_active'] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' ?>">
+                                <?= $cat['is_active'] ? 'ใช้งาน' : 'ไม่ใช้งาน' ?>
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

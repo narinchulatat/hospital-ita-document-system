@@ -53,40 +53,48 @@ class Role {
     /**
      * Create new role
      */
-    public function create($name, $displayName, $description = null) {
+    public function create($data) {
         // Check if role already exists
-        if ($this->getByName($name)) {
-            throw new Exception("Role '{$name}' already exists");
+        if ($this->getByName($data['name'])) {
+            throw new Exception("Role '{$data['name']}' already exists");
         }
         
-        $data = [
-            'name' => $name,
-            'display_name' => $displayName,
-            'description' => $description,
-            'is_active' => 1
-        ];
+        $roleId = $this->db->insert('roles', $data);
         
-        return $this->db->insert('roles', $data);
+        // Log activity
+        logActivity(ACTION_CREATE, 'roles', $roleId, null, $data);
+        
+        return $roleId;
     }
     
     /**
      * Update role
      */
-    public function update($id, $displayName, $description = null) {
-        $data = [
-            'display_name' => $displayName,
-            'description' => $description
-        ];
+    public function update($id, $data) {
+        $oldData = $this->getById($id);
         
-        return $this->db->update('roles', $data, ['id' => $id]);
+        $result = $this->db->update('roles', $data, ['id' => $id]);
+        
+        if ($result) {
+            // Log activity
+            logActivity(ACTION_UPDATE, 'roles', $id, $oldData, $data);
+        }
+        
+        return $result;
     }
     
     /**
      * Delete role
      */
     public function delete($id) {
+        $role = $this->getById($id);
+        
+        if (!$role) {
+            return false;
+        }
+        
         // Check if role is being used
-        $userCount = $this->db->getRowCount('user_roles', ['role_id' => $id]);
+        $userCount = $this->db->query("SELECT COUNT(*) as count FROM users WHERE role_id = ?", [$id])->fetch()['count'];
         if ($userCount > 0) {
             throw new Exception("Cannot delete role: {$userCount} users are assigned to this role");
         }
@@ -99,6 +107,11 @@ class Role {
             
             // Delete the role
             $result = $this->db->delete('roles', ['id' => $id]);
+            
+            if ($result) {
+                // Log activity
+                logActivity(ACTION_DELETE, 'roles', $id, $role, null);
+            }
             
             $this->db->commit();
             return $result;
@@ -192,10 +205,9 @@ class Role {
     public function getUsersWithRole($roleId, $page = 1, $limit = 50) {
         $offset = ($page - 1) * $limit;
         
-        $query = "SELECT u.*, ur.assigned_at
+        $query = "SELECT u.*, u.created_at as assigned_at
                   FROM users u
-                  JOIN user_roles ur ON u.id = ur.user_id
-                  WHERE ur.role_id = ?
+                  WHERE u.role_id = ?
                   ORDER BY u.first_name, u.last_name
                   LIMIT ? OFFSET ?";
         
