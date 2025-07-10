@@ -347,9 +347,49 @@ class Document {
     /**
      * Get pending documents for approval
      */
-    public function getPendingDocuments($page = 1, $limit = 20) {
-        $filters = ['status' => 'pending'];
-        return $this->getAll($filters, $page, $limit);
+    /**
+     * Get pending documents with enhanced filtering
+     */
+    public function getPendingDocuments($page = 1, $limit = 20, $additionalFilters = []) {
+        $offset = ($page - 1) * $limit;
+        
+        $query = "SELECT d.*, c.name as category_name,
+                         u1.first_name as uploader_first_name, u1.last_name as uploader_last_name,
+                         u1.email as uploader_email
+                  FROM documents d
+                  JOIN categories c ON d.category_id = c.id
+                  JOIN users u1 ON d.uploaded_by = u1.id
+                  WHERE d.status = ?";
+        
+        $params = [DOC_STATUS_PENDING];
+        
+        // Apply additional filters
+        if (!empty($additionalFilters['urgent'])) {
+            $query .= " AND (d.is_urgent = 1 OR DATEDIFF(NOW(), d.created_at) > 7)";
+        }
+        
+        if (!empty($additionalFilters['category_id'])) {
+            $query .= " AND d.category_id = ?";
+            $params[] = $additionalFilters['category_id'];
+        }
+        
+        if (!empty($additionalFilters['search'])) {
+            $query .= " AND (d.title LIKE ? OR d.description LIKE ?)";
+            $searchTerm = "%{$additionalFilters['search']}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $query .= " ORDER BY 
+                   CASE WHEN d.is_urgent = 1 THEN 0 ELSE 1 END,
+                   CASE WHEN DATEDIFF(NOW(), d.created_at) > 7 THEN 0 ELSE 1 END,
+                   d.created_at DESC
+                   LIMIT ? OFFSET ?";
+        
+        $params[] = $limit;
+        $params[] = $offset;
+        
+        return $this->db->fetchAll($query, $params);
     }
     
     /**
@@ -390,6 +430,78 @@ class Document {
                   LIMIT ? OFFSET ?";
         
         return $this->db->fetchAll($query, ["%{$tag}%", $limit, $offset]);
+    }
+    
+    
+    /**
+     * Get urgent pending documents
+     */
+    public function getPendingUrgentDocuments($limit = 5) {
+        $query = "SELECT d.*, c.name as category_name,
+                         u1.first_name as uploader_first_name, u1.last_name as uploader_last_name
+                  FROM documents d
+                  JOIN categories c ON d.category_id = c.id
+                  JOIN users u1 ON d.uploaded_by = u1.id
+                  WHERE d.status = ? AND (d.is_urgent = 1 OR DATEDIFF(NOW(), d.created_at) > 7)
+                  ORDER BY d.is_urgent DESC, d.created_at ASC
+                  LIMIT ?";
+        
+        return $this->db->fetchAll($query, [DOC_STATUS_PENDING, $limit]);
+    }
+    
+    /**
+     * Get recent approval activities by user
+     */
+    public function getRecentApprovals($userId, $limit = 10) {
+        $query = "SELECT al.*, d.title as document_title, d.id as document_id
+                  FROM approval_logs al
+                  JOIN documents d ON al.document_id = d.id
+                  WHERE al.approver_id = ?
+                  ORDER BY al.created_at DESC
+                  LIMIT ?";
+        
+        return $this->db->fetchAll($query, [$userId, $limit]);
+    }
+    
+    /**
+     * Get monthly approval data for charts
+     */
+    public function getMonthlyApprovalData($userId, $months = 6) {
+        $query = "SELECT 
+                    DATE_FORMAT(al.created_at, '%Y-%m') as month,
+                    DATE_FORMAT(al.created_at, '%m/%Y') as month_name,
+                    SUM(CASE WHEN al.action = 'approve' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN al.action = 'reject' THEN 1 ELSE 0 END) as rejected
+                  FROM approval_logs al
+                  WHERE al.approver_id = ? 
+                    AND al.created_at >= DATE_SUB(NOW(), INTERVAL ? MONTH)
+                  GROUP BY DATE_FORMAT(al.created_at, '%Y-%m')
+                  ORDER BY month ASC";
+        
+        return $this->db->fetchAll($query, [$userId, $months]);
+    }
+    
+    /**
+     * Get approval statistics by category for user
+     */
+    public function getApprovalStatsByCategory($userId) {
+        $query = "SELECT 
+                    c.id as category_id,
+                    c.name as category_name,
+                    COUNT(CASE WHEN d.status = ? THEN 1 END) as pending,
+                    COUNT(CASE WHEN d.status = ? AND d.approved_by = ? THEN 1 END) as approved,
+                    COUNT(CASE WHEN d.status = ? AND d.approved_by = ? THEN 1 END) as rejected
+                  FROM categories c
+                  LEFT JOIN documents d ON c.id = d.category_id
+                  GROUP BY c.id, c.name
+                  HAVING pending > 0 OR approved > 0 OR rejected > 0
+                  ORDER BY c.name";
+        
+        return $this->db->fetchAll($query, [
+            DOC_STATUS_PENDING,
+            DOC_STATUS_APPROVED, $userId,
+            DOC_STATUS_REJECTED, $userId
+        ]);
     }
     
     /**
