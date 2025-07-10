@@ -12,51 +12,45 @@ class Document {
     }
     
     /**
-     * Create new document
+     * Create new document with proper field mapping
      */
     public function create($data) {
         $this->db->beginTransaction();
         
         try {
+            // Ensure correct field names and defaults
+            if (!isset($data['file_name'])) {
+                $data['file_name'] = $data['filename'] ?? '';
+            }
+            if (!isset($data['version'])) {
+                $data['version'] = '1.0';
+            }
+            if (!isset($data['status'])) {
+                $data['status'] = 'draft';
+            }
+            if (!isset($data['visibility'])) {
+                $data['visibility'] = 'public';
+            }
+            if (!isset($data['download_count'])) {
+                $data['download_count'] = 0;
+            }
+            if (!isset($data['view_count'])) {
+                $data['view_count'] = 0;
+            }
+            if (!isset($data['is_featured'])) {
+                $data['is_featured'] = 0;
+            }
+            if (!isset($data['virus_scan_status'])) {
+                $data['virus_scan_status'] = 'pending';
+            }
+            
+            // Clean up old field names
+            unset($data['fiscal_years'], $data['quarters'], $data['filename']);
+            
             // Insert document
             $documentId = $this->db->insert('documents', $data);
             
-            // Insert fiscal years associations if provided
-            if (isset($data['fiscal_years']) && is_array($data['fiscal_years'])) {
-                foreach ($data['fiscal_years'] as $fiscalYearId) {
-                    $this->db->insert('document_fiscal_years', [
-                        'document_id' => $documentId,
-                        'fiscal_year_id' => $fiscalYearId
-                    ]);
-                }
-            }
-            
-            // Insert quarters associations if provided
-            if (isset($data['quarters']) && is_array($data['quarters'])) {
-                foreach ($data['quarters'] as $quarterId) {
-                    $this->db->insert('document_quarters', [
-                        'document_id' => $documentId,
-                        'quarter_id' => $quarterId
-                    ]);
-                }
-            }
-            
-            // Create initial version
-            $versionData = [
-                'document_id' => $documentId,
-                'version' => $data['version'],
-                'filename' => $data['filename'],
-                'file_path' => $data['file_path'],
-                'file_size' => $data['file_size'],
-                'change_notes' => 'เริ่มต้นเอกสาร',
-                'created_by' => $data['uploaded_by']
-            ];
-            $this->db->insert('document_versions', $versionData);
-            
             $this->db->commit();
-            
-            // Log activity
-            logActivity(ACTION_CREATE, 'documents', $documentId, null, $data);
             
             return $documentId;
         } catch (Exception $e) {
@@ -66,7 +60,7 @@ class Document {
     }
     
     /**
-     * Get document by ID
+     * Get document by ID with proper field mapping
      */
     public function getById($id) {
         $query = "SELECT d.*, c.name as category_name, 
@@ -78,31 +72,11 @@ class Document {
                   LEFT JOIN users u2 ON d.approved_by = u2.id
                   WHERE d.id = ?";
         
-        $document = $this->db->fetch($query, [$id]);
-        
-        if ($document) {
-            // Get fiscal years
-            $fiscalYears = $this->db->fetchAll(
-                "SELECT fy.* FROM fiscal_years fy
-                 JOIN document_fiscal_years dfy ON fy.id = dfy.fiscal_year_id
-                 WHERE dfy.document_id = ?", [$id]
-            );
-            $document['fiscal_years'] = $fiscalYears;
-            
-            // Get quarters
-            $quarters = $this->db->fetchAll(
-                "SELECT q.* FROM quarters q
-                 JOIN document_quarters dq ON q.id = dq.quarter_id
-                 WHERE dq.document_id = ?", [$id]
-            );
-            $document['quarters'] = $quarters;
-        }
-        
-        return $document;
+        return $this->db->fetch($query, [$id]);
     }
     
     /**
-     * Update document
+     * Update document with proper field mapping
      */
     public function update($id, $data) {
         $oldDocument = $this->getById($id);
@@ -110,35 +84,16 @@ class Document {
         $this->db->beginTransaction();
         
         try {
+            // Clean up old field names
+            unset($data['fiscal_years'], $data['quarters']);
+            
+            // Set updated_at
+            $data['updated_at'] = date('Y-m-d H:i:s');
+            
             // Update document
             $this->db->update('documents', $data, ['id' => $id]);
             
-            // Update fiscal years if provided
-            if (isset($data['fiscal_years'])) {
-                $this->db->delete('document_fiscal_years', ['document_id' => $id]);
-                foreach ($data['fiscal_years'] as $fiscalYearId) {
-                    $this->db->insert('document_fiscal_years', [
-                        'document_id' => $id,
-                        'fiscal_year_id' => $fiscalYearId
-                    ]);
-                }
-            }
-            
-            // Update quarters if provided
-            if (isset($data['quarters'])) {
-                $this->db->delete('document_quarters', ['document_id' => $id]);
-                foreach ($data['quarters'] as $quarterId) {
-                    $this->db->insert('document_quarters', [
-                        'document_id' => $id,
-                        'quarter_id' => $quarterId
-                    ]);
-                }
-            }
-            
             $this->db->commit();
-            
-            // Log activity
-            logActivity(ACTION_UPDATE, 'documents', $id, $oldDocument, $data);
             
             return true;
         } catch (Exception $e) {
@@ -298,70 +253,32 @@ class Document {
     }
     
     /**
-     * Approve document
+     * Approve document using correct field names
      */
-    public function approve($id, $approverId, $comment = '') {
+    public function approve($id, $approverId, $notes = '') {
         $data = [
-            'status' => DOC_STATUS_APPROVED,
+            'status' => 'approved',
             'approved_by' => $approverId,
             'approved_at' => date('Y-m-d H:i:s'),
-            'approval_comment' => $comment,
-            'is_public' => 1
+            'approval_notes' => $notes,
+            'visibility' => 'public'
         ];
         
-        $result = $this->db->update('documents', $data, ['id' => $id]);
-        
-        if ($result) {
-            // Log activity
-            logActivity(ACTION_APPROVE, 'documents', $id, null, $data);
-            
-            // Send notification to uploader
-            $document = $this->getById($id);
-            if ($document) {
-                sendNotification(
-                    $document['uploaded_by'],
-                    'เอกสารได้รับการอนุมัติ',
-                    "เอกสาร \"{$document['title']}\" ได้รับการอนุมัติแล้ว",
-                    NOTIF_TYPE_SUCCESS,
-                    "/documents/view.php?id={$id}"
-                );
-            }
-        }
-        
-        return $result;
+        return $this->db->update('documents', $data, ['id' => $id]);
     }
     
     /**
-     * Reject document
+     * Reject document using correct field names
      */
-    public function reject($id, $approverId, $comment = '') {
+    public function reject($id, $approverId, $notes = '') {
         $data = [
-            'status' => DOC_STATUS_REJECTED,
+            'status' => 'rejected',
             'approved_by' => $approverId,
             'approved_at' => date('Y-m-d H:i:s'),
-            'approval_comment' => $comment
+            'approval_notes' => $notes
         ];
         
-        $result = $this->db->update('documents', $data, ['id' => $id]);
-        
-        if ($result) {
-            // Log activity
-            logActivity(ACTION_REJECT, 'documents', $id, null, $data);
-            
-            // Send notification to uploader
-            $document = $this->getById($id);
-            if ($document) {
-                sendNotification(
-                    $document['uploaded_by'],
-                    'เอกสารไม่ได้รับการอนุมัติ',
-                    "เอกสาร \"{$document['title']}\" ไม่ได้รับการอนุมัติ: {$comment}",
-                    NOTIF_TYPE_WARNING,
-                    "/documents/view.php?id={$id}"
-                );
-            }
-        }
-        
-        return $result;
+        return $this->db->update('documents', $data, ['id' => $id]);
     }
     
     /**
@@ -430,8 +347,127 @@ class Document {
     /**
      * Get pending documents for approval
      */
-    public function getPendingDocuments($page = 1, $limit = ITEMS_PER_PAGE) {
-        $filters = ['status' => DOC_STATUS_PENDING];
+    public function getPendingDocuments($page = 1, $limit = 20) {
+        $filters = ['status' => 'pending'];
         return $this->getAll($filters, $page, $limit);
+    }
+    
+    /**
+     * Update virus scan status
+     */
+    public function updateVirusScanStatus($id, $status, $scanDate = null) {
+        $data = [
+            'virus_scan_status' => $status,
+            'virus_scan_date' => $scanDate ?: date('Y-m-d H:i:s')
+        ];
+        
+        return $this->db->update('documents', $data, ['id' => $id]);
+    }
+    
+    /**
+     * Calculate and update file checksum
+     */
+    public function updateChecksum($id, $filePath) {
+        if (!file_exists($filePath)) {
+            return false;
+        }
+        
+        $checksum = hash_file('sha256', $filePath);
+        return $this->db->update('documents', ['checksum' => $checksum], ['id' => $id]);
+    }
+    
+    /**
+     * Get documents by tag
+     */
+    public function getByTag($tag, $page = 1, $limit = 20) {
+        $offset = ($page - 1) * $limit;
+        
+        $query = "SELECT d.*, c.name as category_name
+                  FROM documents d
+                  JOIN categories c ON d.category_id = c.id
+                  WHERE d.tags LIKE ? AND d.status = 'approved' AND d.visibility = 'public'
+                  ORDER BY d.created_at DESC
+                  LIMIT ? OFFSET ?";
+        
+        return $this->db->fetchAll($query, ["%{$tag}%", $limit, $offset]);
+    }
+    
+    /**
+     * Get expiring documents
+     */
+    public function getExpiringDocuments($days = 30) {
+        $expiryDate = date('Y-m-d', strtotime("+{$days} days"));
+        
+        $query = "SELECT d.*, c.name as category_name
+                  FROM documents d
+                  JOIN categories c ON d.category_id = c.id
+                  WHERE d.expiry_date IS NOT NULL 
+                  AND d.expiry_date <= ? 
+                  AND d.status = 'approved'
+                  ORDER BY d.expiry_date ASC";
+        
+        return $this->db->fetchAll($query, [$expiryDate]);
+    }
+    
+    /**
+     * Get featured documents
+     */
+    public function getFeaturedDocuments($limit = 10) {
+        $query = "SELECT d.*, c.name as category_name
+                  FROM documents d
+                  JOIN categories c ON d.category_id = c.id
+                  WHERE d.is_featured = 1 
+                  AND d.status = 'approved' 
+                  AND d.visibility = 'public'
+                  ORDER BY d.created_at DESC
+                  LIMIT ?";
+        
+        return $this->db->fetchAll($query, [$limit]);
+    }
+    
+    /**
+     * Set document as featured
+     */
+    public function setFeatured($id, $featured = true) {
+        return $this->db->update('documents', ['is_featured' => $featured ? 1 : 0], ['id' => $id]);
+    }
+    
+    /**
+     * Archive document
+     */
+    public function archive($id) {
+        return $this->db->update('documents', ['status' => 'archived'], ['id' => $id]);
+    }
+    
+    /**
+     * Get document statistics
+     */
+    public function getDocumentStats() {
+        $stats = [];
+        
+        // Total documents
+        $stats['total'] = $this->db->getRowCount('documents');
+        
+        // Documents by status
+        foreach (['draft', 'pending', 'approved', 'rejected', 'archived'] as $status) {
+            $stats["status_{$status}"] = $this->db->getRowCount('documents', ['status' => $status]);
+        }
+        
+        // Documents by visibility
+        foreach (['public', 'private', 'restricted'] as $visibility) {
+            $stats["visibility_{$visibility}"] = $this->db->getRowCount('documents', ['visibility' => $visibility]);
+        }
+        
+        // Featured documents
+        $stats['featured'] = $this->db->getRowCount('documents', ['is_featured' => 1]);
+        
+        // Documents with expiry dates
+        $stats['with_expiry'] = $this->db->execute("SELECT COUNT(*) as count FROM documents WHERE expiry_date IS NOT NULL")->fetch()['count'];
+        
+        // Total file size
+        $sizeResult = $this->db->fetch("SELECT SUM(file_size) as total_size FROM documents");
+        $stats['total_size'] = $sizeResult['total_size'] ?? 0;
+        
+        return $stats;
     }
 }

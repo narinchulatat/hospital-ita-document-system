@@ -27,15 +27,15 @@ class Backup {
             $filename = "backup_database_{$timestamp}.sql";
             $filePath = $this->backupPath . $filename;
             
-            // Create backup record
+            // Create backup record (using correct field names)
             $backupData = [
-                'filename' => $filename,
+                'file_name' => $filename,           // Correct field name
                 'file_path' => $filePath,
                 'file_size' => 0,
-                'backup_type' => $type,
-                'includes_files' => $includeFiles ? 1 : 0,
-                'status' => BACKUP_CREATING,
-                'created_by' => $createdBy ?: getCurrentUserId()
+                'type' => $type,                    // Correct field name
+                'status' => 'in_progress',          // Using correct enum value
+                'started_at' => date('Y-m-d H:i:s'),
+                'created_by' => $createdBy ?: 1     // Default to user 1 if no user
             ];
             
             $backupId = $this->db->insert('backups', $backupData);
@@ -54,22 +54,22 @@ class Backup {
                 
                 $this->createCompleteBackup($filePath, $archivePath);
                 
-                // Update backup record with archive info
+                // Update backup record with archive info (using correct field names)
                 $this->db->update('backups', [
-                    'filename' => $archiveFilename,
+                    'file_name' => $archiveFilename,
                     'file_path' => $archivePath,
                     'file_size' => filesize($archivePath),
-                    'status' => BACKUP_COMPLETED,
+                    'status' => 'completed',
                     'completed_at' => date('Y-m-d H:i:s')
                 ], ['id' => $backupId]);
                 
                 // Remove temporary SQL file
                 unlink($filePath);
             } else {
-                // Update backup record
+                // Update backup record (using correct field names)
                 $this->db->update('backups', [
                     'file_size' => $fileSize,
-                    'status' => BACKUP_COMPLETED,
+                    'status' => 'completed',
                     'completed_at' => date('Y-m-d H:i:s')
                 ], ['id' => $backupId]);
             }
@@ -80,11 +80,12 @@ class Backup {
             return $backupId;
             
         } catch (Exception $e) {
-            // Update backup status to failed
+            // Update backup status to failed (using correct field names)
             if (isset($backupId)) {
                 $this->db->update('backups', [
-                    'status' => BACKUP_FAILED,
-                    'completed_at' => date('Y-m-d H:i:s')
+                    'status' => 'failed',
+                    'completed_at' => date('Y-m-d H:i:s'),
+                    'error_message' => $e->getMessage()
                 ], ['id' => $backupId]);
             }
             
@@ -258,9 +259,9 @@ class Backup {
             return false;
         }
         
-        // Set headers for download
+        // Set headers for download (using correct field names)
         header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . $backup['filename'] . '"');
+        header('Content-Disposition: attachment; filename="' . $backup['file_name'] . '"');
         header('Content-Length: ' . $backup['file_size']);
         
         // Output file

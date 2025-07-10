@@ -12,18 +12,18 @@ class Notification {
     }
     
     /**
-     * Create new notification
+     * Create new notification with correct enum values
      */
-    public function create($userId, $title, $message, $type = NOTIF_TYPE_INFO, $actionUrl = null) {
-        $data = [
+    public function create($userId, $type, $title, $message, $data = null) {
+        $notificationData = [
             'user_id' => $userId,
+            'type' => $type,  // Use database enum: 'document_uploaded','document_approved','document_rejected','document_expiring','system_alert'
             'title' => $title,
             'message' => $message,
-            'type' => $type,
-            'action_url' => $actionUrl
+            'data' => $data ? json_encode($data) : null
         ];
         
-        return $this->db->insert('notifications', $data);
+        return $this->db->insert('notifications', $notificationData);
     }
     
     /**
@@ -95,11 +95,11 @@ class Notification {
     /**
      * Send notification to multiple users
      */
-    public function sendToUsers($userIds, $title, $message, $type = NOTIF_TYPE_INFO, $actionUrl = null) {
+    public function sendToUsers($userIds, $type, $title, $message, $data = null) {
         $results = [];
         
         foreach ($userIds as $userId) {
-            $results[] = $this->create($userId, $title, $message, $type, $actionUrl);
+            $results[] = $this->create($userId, $type, $title, $message, $data);
         }
         
         return $results;
@@ -124,15 +124,47 @@ class Notification {
     }
     
     /**
-     * Clean old notifications
+     * Clean old notifications and expired ones
      */
     public function cleanOldNotifications($daysOld = 30) {
         $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$daysOld} days"));
         
-        $query = "DELETE FROM notifications WHERE created_at < ? AND is_read = 1";
-        $this->db->execute($query, [$cutoffDate]);
+        // Delete read notifications older than specified days
+        $query1 = "DELETE FROM notifications WHERE created_at < ? AND is_read = 1";
+        $this->db->execute($query1, [$cutoffDate]);
+        
+        // Delete expired notifications
+        $query2 = "DELETE FROM notifications WHERE expires_at IS NOT NULL AND expires_at < NOW()";
+        $this->db->execute($query2);
         
         return true;
+    }
+    
+    /**
+     * Create document-related notification using correct enum
+     */
+    public function createDocumentNotification($action, $documentId, $documentTitle, $recipientUserId, $senderName = null) {
+        $typeMap = [
+            'uploaded' => 'document_uploaded',
+            'approved' => 'document_approved', 
+            'rejected' => 'document_rejected',
+            'expiring' => 'document_expiring'
+        ];
+        
+        $type = $typeMap[$action] ?? 'system_alert';
+        
+        $title = "การดำเนินการเอกสาร";
+        $message = $senderName ? 
+            "{$senderName} ได้ดำเนินการ {$action} เอกสาร: \"{$documentTitle}\"" : 
+            "เอกสาร \"{$documentTitle}\" ได้รับการ {$action}";
+        
+        $data = [
+            'document_id' => $documentId,
+            'action' => $action,
+            'sender' => $senderName
+        ];
+        
+        return $this->create($recipientUserId, $type, $title, $message, $data);
     }
     
     /**
