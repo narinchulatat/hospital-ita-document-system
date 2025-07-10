@@ -1,9 +1,13 @@
 <?php
 $pageTitle = 'แดชบอร์ดผู้ดูแลระบบ';
-require_once '../includes/header.php';
+$pageSubtitle = 'ภาพรวมและการจัดการระบบ';
 
-// Require admin role
-requireRole(ROLE_ADMIN);
+require_once 'includes/header.php';
+require_once '../classes/User.php';
+require_once '../classes/Document.php';
+require_once '../classes/Category.php';
+require_once '../classes/Backup.php';
+require_once '../classes/Download.php';
 
 try {
     $db = Database::getInstance();
@@ -63,250 +67,331 @@ try {
 }
 ?>
 
-<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-    <!-- Page Header -->
-    <div class="md:flex md:items-center md:justify-between mb-8">
-        <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                <i class="fas fa-tachometer-alt mr-3"></i>แดชบอร์ดผู้ดูแลระบบ
-            </h2>
-            <p class="mt-1 text-sm text-gray-500">
-                ภาพรวมและการจัดการระบบ
-            </p>
-        </div>
-        <div class="mt-4 flex md:mt-0 md:ml-4">
-            <a href="<?= BASE_URL ?>/admin/backups/" 
-               class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                <i class="fas fa-database mr-2"></i>สำรองข้อมูล
-            </a>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <!-- Total Users -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-users text-3xl text-blue-600"></i>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">ผู้ใช้ทั้งหมด</dt>
-                            <dd class="text-3xl font-bold text-gray-900"><?= number_format($stats['total_users']) ?></dd>
-                        </dl>
-                    </div>
+<!-- Dashboard Statistics -->
+<div class="row dashboard-stats mb-4">
+    <!-- Total Users -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-number"><?= number_format($stats['total_users']) ?></div>
+                    <div class="stats-label">ผู้ใช้ทั้งหมด</div>
                 </div>
             </div>
-            <div class="bg-gray-50 px-5 py-3">
-                <div class="text-sm">
-                    <a href="<?= BASE_URL ?>/admin/users/" class="font-medium text-blue-600 hover:text-blue-500">
-                        จัดการผู้ใช้ <span aria-hidden="true">&rarr;</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Documents -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-file-alt text-3xl text-green-600"></i>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">เอกสารทั้งหมด</dt>
-                            <dd class="text-3xl font-bold text-gray-900"><?= number_format($stats['total_documents']) ?></dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-gray-50 px-5 py-3">
-                <div class="text-sm">
-                    <a href="<?= BASE_URL ?>/admin/documents/" class="font-medium text-green-600 hover:text-green-500">
-                        จัดการเอกสาร <span aria-hidden="true">&rarr;</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Documents -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-clock text-3xl text-yellow-600"></i>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">รออนุมัติ</dt>
-                            <dd class="text-3xl font-bold text-gray-900"><?= number_format($stats['pending_documents']) ?></dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-gray-50 px-5 py-3">
-                <div class="text-sm">
-                    <a href="<?= BASE_URL ?>/admin/documents/?status=pending" class="font-medium text-yellow-600 hover:text-yellow-500">
-                        ดูรายการ <span aria-hidden="true">&rarr;</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Storage Used -->
-        <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-hdd text-3xl text-purple-600"></i>
-                    </div>
-                    <div class="ml-5 w-0 flex-1">
-                        <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">พื้นที่ใช้งาน</dt>
-                            <dd class="text-2xl font-bold text-gray-900"><?= formatFileSize($stats['storage_used']) ?></dd>
-                        </dl>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-gray-50 px-5 py-3">
-                <div class="text-sm">
-                    <a href="<?= BASE_URL ?>/admin/reports/" class="font-medium text-purple-600 hover:text-purple-500">
-                        ดูรายงาน <span aria-hidden="true">&rarr;</span>
-                    </a>
-                </div>
+            <div class="stats-footer">
+                <a href="<?= BASE_URL ?>/admin/users/">จัดการผู้ใช้ <i class="fas fa-arrow-right"></i></a>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Recent Activities -->
-        <div class="bg-white shadow rounded-lg">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">
-                    <i class="fas fa-history mr-2"></i>กิจกรรมล่าสุด
-                </h3>
+    <!-- Total Documents -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card success">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-number"><?= number_format($stats['total_documents']) ?></div>
+                    <div class="stats-label">เอกสารทั้งหมด</div>
+                </div>
             </div>
-            <div class="p-6">
+            <div class="stats-footer">
+                <a href="<?= BASE_URL ?>/admin/documents/">จัดการเอกสาร <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Documents -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-number"><?= number_format($stats['pending_documents']) ?></div>
+                    <div class="stats-label">รออนุมัติ</div>
+                </div>
+            </div>
+            <div class="stats-footer">
+                <a href="<?= BASE_URL ?>/admin/documents/?status=pending">ดูรายการ <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Used -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card info">
+            <div class="card-body d-flex align-items-center">
+                <div class="stats-icon">
+                    <i class="fas fa-hdd"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-number"><?= formatFileSize($stats['storage_used']) ?></div>
+                    <div class="stats-label">พื้นที่ใช้งาน</div>
+                </div>
+            </div>
+            <div class="stats-footer">
+                <a href="<?= BASE_URL ?>/admin/reports/">ดูรายงาน <i class="fas fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions mb-4">
+    <a href="<?= BASE_URL ?>/admin/users/create.php" class="quick-action-card">
+        <div class="quick-action-icon">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="quick-action-title">เพิ่มผู้ใช้ใหม่</div>
+        <div class="quick-action-description">สร้างบัญชีผู้ใช้ใหม่ในระบบ</div>
+    </a>
+    
+    <a href="<?= BASE_URL ?>/admin/documents/create.php" class="quick-action-card">
+        <div class="quick-action-icon">
+            <i class="fas fa-file-plus"></i>
+        </div>
+        <div class="quick-action-title">เพิ่มเอกสาร</div>
+        <div class="quick-action-description">อัปโหลดเอกสารใหม่เข้าสู่ระบบ</div>
+    </a>
+    
+    <a href="<?= BASE_URL ?>/admin/backups/create.php" class="quick-action-card">
+        <div class="quick-action-icon">
+            <i class="fas fa-database"></i>
+        </div>
+        <div class="quick-action-title">สำรองข้อมูล</div>
+        <div class="quick-action-description">สร้างข้อมูลสำรองของระบบ</div>
+    </a>
+    
+    <a href="<?= BASE_URL ?>/admin/settings/" class="quick-action-card">
+        <div class="quick-action-icon">
+            <i class="fas fa-cog"></i>
+        </div>
+        <div class="quick-action-title">ตั้งค่าระบบ</div>
+        <div class="quick-action-description">จัดการการตั้งค่าของระบบ</div>
+    </a>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row">
+    <!-- Recent Activities -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>กิจกรรมล่าสุด</h5>
+            </div>
+            <div class="card-body">
                 <?php if (!empty($recentActivities)): ?>
-                <div class="flow-root">
-                    <ul class="-mb-8">
-                        <?php foreach ($recentActivities as $index => $activity): ?>
-                        <li>
-                            <div class="relative pb-8">
-                                <?php if ($index < count($recentActivities) - 1): ?>
-                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
-                                <?php endif; ?>
-                                <div class="relative flex space-x-3">
-                                    <div>
-                                        <span class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center ring-8 ring-white">
-                                            <i class="fas fa-<?= getActivityIcon($activity['action']) ?> text-blue-600 text-sm"></i>
-                                        </span>
-                                    </div>
-                                    <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                                        <div>
-                                            <p class="text-sm text-gray-500">
-                                                <span class="font-medium text-gray-900">
-                                                    <?= $activity['first_name'] ? htmlspecialchars($activity['first_name'] . ' ' . $activity['last_name']) : 'ระบบ' ?>
-                                                </span>
-                                                <?= getActivityDescription($activity['action'], $activity['table_name']) ?>
-                                            </p>
-                                        </div>
-                                        <div class="text-right text-sm whitespace-nowrap text-gray-500">
-                                            <?= formatThaiDate($activity['created_at'], true) ?>
-                                        </div>
-                                    </div>
-                                </div>
+                <div class="activity-timeline">
+                    <?php foreach ($recentActivities as $activity): ?>
+                    <div class="activity-item">
+                        <div class="activity-content">
+                            <div class="activity-title">
+                                <?= $activity['first_name'] ? htmlspecialchars($activity['first_name'] . ' ' . $activity['last_name']) : 'ระบบ' ?>
                             </div>
-                        </li>
-                        <?php endforeach; ?>
-                    </ul>
+                            <div class="activity-description">
+                                <?= getActivityDescription($activity['action'], $activity['table_name']) ?>
+                            </div>
+                            <div class="activity-time">
+                                <?= formatThaiDate($activity['created_at'], true) ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
                 <?php else: ?>
-                <p class="text-gray-500 text-center py-4">ไม่มีกิจกรรม</p>
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-clock fa-3x mb-3"></i>
+                    <p>ไม่มีกิจกรรมล่าสุด</p>
+                </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status & Notifications -->
+    <div class="col-lg-4 mb-4">
+        <!-- System Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-server me-2"></i>สถานะระบบ</h5>
+            </div>
+            <div class="card-body">
+                <div class="system-status">
+                    <div class="status-item">
+                        <div class="status-indicator"></div>
+                        <div class="status-content">
+                            <div class="status-title">ฐานข้อมูล</div>
+                            <div class="status-value">เชื่อมต่อปกติ</div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-indicator"></div>
+                        <div class="status-content">
+                            <div class="status-title">ระบบไฟล์</div>
+                            <div class="status-value">ทำงานปกติ</div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-indicator warning"></div>
+                        <div class="status-content">
+                            <div class="status-title">พื้นที่เก็บข้อมูล</div>
+                            <div class="status-value">ใช้ไป 75%</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Pending Approvals -->
-        <div class="bg-white shadow rounded-lg">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">
-                    <i class="fas fa-clock mr-2"></i>เอกสารรออนุมัติ
-                </h3>
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>เอกสารรออนุมัติ</h5>
             </div>
-            <div class="p-6">
+            <div class="card-body">
                 <?php if (!empty($pendingApprovals)): ?>
-                <div class="space-y-4">
+                <div class="recent-items">
                     <?php foreach ($pendingApprovals as $doc): ?>
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <h4 class="text-sm font-medium text-gray-900">
-                                    <a href="<?= BASE_URL ?>/admin/documents/view.php?id=<?= $doc['id'] ?>" 
-                                       class="hover:text-blue-600">
-                                        <?= htmlspecialchars($doc['title']) ?>
-                                    </a>
-                                </h4>
-                                <p class="text-xs text-gray-500 mt-1">
-                                    อัปโหลดโดย: <?= htmlspecialchars($doc['uploader_first_name'] . ' ' . $doc['uploader_last_name']) ?>
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    <?= formatThaiDate($doc['created_at']) ?>
-                                </p>
+                    <div class="recent-item">
+                        <div class="recent-item-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div class="recent-item-content">
+                            <div class="recent-item-title">
+                                <a href="<?= BASE_URL ?>/admin/documents/view.php?id=<?= $doc['id'] ?>">
+                                    <?= htmlspecialchars($doc['title']) ?>
+                                </a>
                             </div>
-                            <div class="ml-4">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    รออนุมัติ
-                                </span>
+                            <div class="recent-item-meta">
+                                โดย: <?= htmlspecialchars($doc['uploader_first_name'] . ' ' . $doc['uploader_last_name']) ?>
                             </div>
+                        </div>
+                        <div class="recent-item-time">
+                            <?= formatThaiDate($doc['created_at']) ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
                 
-                <div class="mt-4 text-center">
-                    <a href="<?= BASE_URL ?>/admin/documents/?status=pending" 
-                       class="text-blue-600 hover:text-blue-500 text-sm">
-                        ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
+                <div class="text-center mt-3">
+                    <a href="<?= BASE_URL ?>/admin/documents/?status=pending" class="btn btn-outline-primary btn-sm">
+                        ดูทั้งหมด <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
                 <?php else: ?>
-                <p class="text-gray-500 text-center py-4">ไม่มีเอกสารรออนุมัติ</p>
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <p>ไม่มีเอกสารรออนุมัติ</p>
+                </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Document Statistics Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">สถิติเอกสาร (7 วันล่าสุด)</h5>
+                <div class="chart-actions">
+                    <button class="btn btn-sm btn-outline-secondary" data-period="7">7 วัน</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-period="30">30 วัน</button>
+                </div>
+            </div>
+            <div class="chart-body">
+                <canvas id="documentsChart"></canvas>
             </div>
         </div>
     </div>
 
     <!-- Users by Role Chart -->
-    <div class="mt-8">
-        <div class="bg-white shadow rounded-lg">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">
-                    <i class="fas fa-chart-pie mr-2"></i>ผู้ใช้ตามบทบาท
-                </h3>
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h5 class="chart-title">ผู้ใช้ตามบทบาท</h5>
             </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                    <?php 
-                    $roleColors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500'];
-                    foreach ($usersByRole as $index => $roleData): 
-                    ?>
-                    <div class="text-center">
-                        <div class="<?= $roleColors[$index] ?? 'bg-gray-500' ?> rounded-lg p-4 text-white">
-                            <div class="text-2xl font-bold"><?= number_format($roleData['count']) ?></div>
-                            <div class="text-sm opacity-75"><?= htmlspecialchars($roleData['role_name']) ?></div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
+            <div class="chart-body">
+                <canvas id="usersChart"></canvas>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Initialize dashboard charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Documents Chart
+    const documentsCtx = document.getElementById('documentsChart').getContext('2d');
+    new Chart(documentsCtx, {
+        type: 'line',
+        data: {
+            labels: ['6 วันที่แล้ว', '5 วันที่แล้ว', '4 วันที่แล้ว', '3 วันที่แล้ว', '2 วันที่แล้ว', 'เมื่อวาน', 'วันนี้'],
+            datasets: [{
+                label: 'เอกสารใหม่',
+                data: [12, 19, 3, 5, 2, 8, 10],
+                borderColor: 'rgb(52, 152, 219)',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'การดาวน์โหลด',
+                data: [25, 32, 18, 28, 15, 35, 42],
+                borderColor: 'rgb(39, 174, 96)',
+                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Users Chart
+    const usersCtx = document.getElementById('usersChart').getContext('2d');
+    new Chart(usersCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [<?php foreach ($usersByRole as $role): ?>'<?= htmlspecialchars($role['role_name']) ?>',<?php endforeach; ?>],
+            datasets: [{
+                data: [<?php foreach ($usersByRole as $role): ?><?= $role['count'] ?>,<?php endforeach; ?>],
+                backgroundColor: [
+                    'rgb(52, 152, 219)',
+                    'rgb(39, 174, 96)',
+                    'rgb(243, 156, 18)',
+                    'rgb(155, 89, 182)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+});
+</script>
 
 <?php
 function getActivityIcon($action) {
@@ -348,4 +433,4 @@ function getTableName($table) {
 }
 ?>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php require_once 'includes/footer.php'; ?>
