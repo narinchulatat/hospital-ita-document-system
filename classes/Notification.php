@@ -184,77 +184,12 @@ class Notification {
             $stats['unread'] = $this->db->getRowCount('notifications', ['is_read' => 0]);
             $stats['read'] = $stats['total'] - $stats['unread'];
             
-            // Stats by type
-            foreach ([NOTIF_TYPE_INFO, NOTIF_TYPE_SUCCESS, NOTIF_TYPE_WARNING, NOTIF_TYPE_ERROR] as $type) {
+            // Stats by type - using correct enum values
+            foreach (['document_uploaded', 'document_approved', 'document_rejected', 'document_expiring', 'system_alert'] as $type) {
                 $stats["type_{$type}"] = $this->db->getRowCount('notifications', ['type' => $type]);
             }
         }
         
         return $stats;
-    }
-    
-    /**
-     * Create document notification
-     */
-    public function createDocumentNotification($action, $documentId, $documentTitle, $recipientUserId, $senderName = null) {
-        $actionMessages = [
-            'uploaded' => 'อัปโหลดเอกสารใหม่',
-            'approved' => 'อนุมัติเอกสาร',
-            'rejected' => 'ไม่อนุมัติเอกสาร',
-            'updated' => 'แก้ไขเอกสาร'
-        ];
-        
-        $actionTypes = [
-            'uploaded' => NOTIF_TYPE_INFO,
-            'approved' => NOTIF_TYPE_SUCCESS,
-            'rejected' => NOTIF_TYPE_WARNING,
-            'updated' => NOTIF_TYPE_INFO
-        ];
-        
-        $title = $actionMessages[$action] ?? 'การดำเนินการเอกสาร';
-        $type = $actionTypes[$action] ?? NOTIF_TYPE_INFO;
-        
-        $message = $senderName ? 
-            "{$senderName} {$title}: \"{$documentTitle}\"" : 
-            "{$title}: \"{$documentTitle}\"";
-        
-        $actionUrl = "/documents/view.php?id={$documentId}";
-        
-        return $this->create($recipientUserId, $title, $message, $type, $actionUrl);
-    }
-    
-    /**
-     * Create user notification
-     */
-    public function createUserNotification($action, $username, $recipientUserId, $senderName = null) {
-        $actionMessages = [
-            'created' => 'สร้างผู้ใช้ใหม่',
-            'updated' => 'แก้ไขข้อมูลผู้ใช้',
-            'deleted' => 'ลบผู้ใช้',
-            'activated' => 'เปิดใช้งานผู้ใช้',
-            'deactivated' => 'ปิดใช้งานผู้ใช้'
-        ];
-        
-        $title = $actionMessages[$action] ?? 'การจัดการผู้ใช้';
-        $message = $senderName ? 
-            "{$senderName} {$title}: {$username}" : 
-            "{$title}: {$username}";
-        
-        return $this->create($recipientUserId, $title, $message, NOTIF_TYPE_INFO);
-    }
-    
-    /**
-     * Create system notification
-     */
-    public function createSystemNotification($title, $message, $type = NOTIF_TYPE_INFO, $sendToAllAdmins = true) {
-        if ($sendToAllAdmins) {
-            return $this->sendToAdmins($title, $message, $type);
-        } else {
-            // Send to all users
-            $query = "SELECT id FROM users WHERE status = 'active'";
-            $users = $this->db->fetchAll($query);
-            $userIds = array_column($users, 'id');
-            return $this->sendToUsers($userIds, $title, $message, $type);
-        }
     }
 }
