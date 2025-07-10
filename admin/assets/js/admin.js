@@ -1,4 +1,7 @@
-// Admin Panel JavaScript
+/**
+ * Admin Panel JavaScript - TailwindCSS Version
+ * สำหรับจัดการฟังก์ชันการทำงานของระบบผู้ดูแล
+ */
 
 $(document).ready(function() {
     // Initialize admin features
@@ -7,16 +10,13 @@ $(document).ready(function() {
     // Sidebar toggle functionality
     initializeSidebar();
     
-    // Initialize tooltips and popovers
-    initializeBootstrapComponents();
-    
-    // Initialize AJAX setup
-    initializeAjax();
-    
     // Initialize common features
     initializeDeleteConfirmation();
     initializeFormValidation();
     initializeAutoHideAlerts();
+    
+    // Initialize AJAX setup
+    initializeAjax();
 });
 
 /**
@@ -29,7 +29,7 @@ function initializeAdmin() {
         const originalText = $btn.html();
         
         $btn.prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin me-2"></i>กำลังดำเนินการ...');
+            .html('<i class="fas fa-spinner fa-spin mr-2"></i>กำลังดำเนินการ...');
         
         // Re-enable after 10 seconds (fallback)
         setTimeout(() => {
@@ -37,28 +37,18 @@ function initializeAdmin() {
         }, 10000);
     });
     
-    // Initialize Select2
+    // Initialize Select2 with TailwindCSS styling
     if ($.fn.select2) {
         $('.select2').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
+            width: '100%',
+            placeholder: 'เลือก...',
+            allowClear: true
         });
         
         $('.select2-multiple').select2({
-            theme: 'bootstrap-5',
             width: '100%',
             placeholder: 'เลือกรายการ...',
             allowClear: true
-        });
-    }
-    
-    // Initialize date pickers
-    if ($.fn.datepicker) {
-        $('.datepicker').datepicker({
-            format: 'yyyy-mm-dd',
-            autoclose: true,
-            todayHighlight: true,
-            language: 'th'
         });
     }
     
@@ -75,79 +65,74 @@ function initializeAdmin() {
  * Initialize sidebar functionality
  */
 function initializeSidebar() {
-    const sidebar = $('#sidebar');
-    const mainContent = $('#main-content');
-    const sidebarToggle = $('#sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    
+    if (!sidebar || !mainContent || !sidebarToggle) {
+        return; // Elements not found
+    }
     
     // Toggle sidebar
-    sidebarToggle.on('click', function() {
-        sidebar.toggleClass('collapsed');
-        mainContent.toggleClass('expanded');
+    sidebarToggle.addEventListener('click', function() {
+        // Toggle sidebar width
+        sidebar.classList.toggle('w-64');
+        sidebar.classList.toggle('w-20');
+        
+        // Toggle main content margin
+        mainContent.classList.toggle('ml-64');
+        mainContent.classList.toggle('ml-20');
+        
+        // Toggle text visibility
+        const navTexts = sidebar.querySelectorAll('.nav-text');
+        const brandText = sidebar.querySelector('.brand-text');
+        
+        navTexts.forEach(text => text.classList.toggle('hidden'));
+        if (brandText) brandText.classList.toggle('hidden');
         
         // Save state to localStorage
-        const isCollapsed = sidebar.hasClass('collapsed');
+        const isCollapsed = sidebar.classList.contains('w-20');
         localStorage.setItem('sidebarCollapsed', isCollapsed);
     });
     
     // Restore sidebar state
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState === 'true') {
-        sidebar.addClass('collapsed');
-        mainContent.addClass('expanded');
+        sidebar.classList.add('w-20');
+        sidebar.classList.remove('w-64');
+        mainContent.classList.add('ml-20');
+        mainContent.classList.remove('ml-64');
+        
+        const navTexts = sidebar.querySelectorAll('.nav-text');
+        const brandText = sidebar.querySelector('.brand-text');
+        navTexts.forEach(text => text.classList.add('hidden'));
+        if (brandText) brandText.classList.add('hidden');
     }
     
-    // Mobile sidebar overlay
+    // Mobile sidebar handling
     if (window.innerWidth <= 768) {
-        sidebarToggle.on('click', function() {
-            sidebar.toggleClass('show');
+        sidebar.classList.add('-translate-x-full');
+        mainContent.classList.remove('ml-64', 'ml-20');
+        
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('-translate-x-full');
             
-            // Add overlay
-            if (sidebar.hasClass('show')) {
-                $('<div class="sidebar-overlay"></div>')
-                    .appendTo('body')
-                    .on('click', function() {
-                        sidebar.removeClass('show');
-                        $(this).remove();
-                    });
+            // Add overlay for mobile
+            if (!sidebar.classList.contains('-translate-x-full')) {
+                const overlay = document.createElement('div');
+                overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-40';
+                overlay.id = 'sidebar-overlay';
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    this.remove();
+                });
+                document.body.appendChild(overlay);
             } else {
-                $('.sidebar-overlay').remove();
+                const overlay = document.getElementById('sidebar-overlay');
+                if (overlay) overlay.remove();
             }
         });
     }
-    
-    // Submenu toggle
-    $('.nav-link[data-bs-toggle="collapse"]').on('click', function(e) {
-        e.preventDefault();
-        const target = $($(this).data('bs-target'));
-        
-        // Close other submenus
-        $('.submenu.show').not(target).removeClass('show');
-        
-        // Toggle current submenu
-        target.toggleClass('show');
-    });
-}
-
-/**
- * Initialize Bootstrap components
- */
-function initializeBootstrapComponents() {
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Initialize popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    const popoverList = popoverTriggerList.map(function(popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-    
-    // Initialize modals with backdrop options
-    $('.modal').on('show.bs.modal', function() {
-        $(this).find('.modal-body').scrollTop(0);
-    });
 }
 
 /**
@@ -198,8 +183,8 @@ function initializeDeleteConfirmation() {
             text: text,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
             confirmButtonText: 'ใช่, ลบเลย!',
             cancelButtonText: 'ยกเลิก',
             reverseButtons: true
