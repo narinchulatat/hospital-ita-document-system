@@ -7,6 +7,7 @@
 $pageTitle = 'Dashboard รายงาน';
 $pageDescription = 'ภาพรวมสถิติและรายงานสำคัญ';
 $pageIcon = 'fas fa-tachometer-alt';
+require_once __DIR__ . '/includes/functions.php';
 $breadcrumb = generateReportBreadcrumb([
     ['name' => 'Dashboard', 'url' => REPORTS_URL . '/dashboard.php']
 ]);

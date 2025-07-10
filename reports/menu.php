@@ -8,6 +8,7 @@
 $pageTitle = 'เมนูรายงาน';
 $pageDescription = 'เลือกประเภทรายงานที่ต้องการดู';
 $pageIcon = 'fas fa-bars';
+require_once __DIR__ . '/includes/functions.php';
 $breadcrumb = generateReportBreadcrumb([
     ['name' => 'เมนูรายงาน']
 ]);

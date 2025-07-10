@@ -15,7 +15,7 @@ class User {
      * Authenticate user login
      */
     public function authenticate($username, $password) {
-        $query = "SELECT u.*, r.name as role_name 
+        $query = "SELECT u.*, ur.role_id, r.name as role_name 
                   FROM users u 
                   LEFT JOIN user_roles ur ON u.id = ur.user_id 
                   LEFT JOIN roles r ON ur.role_id = r.id 
@@ -49,7 +49,7 @@ class User {
      * Get user by ID
      */
     public function getById($id) {
-        $query = "SELECT u.*, r.name as role_name 
+        $query = "SELECT u.*, ur.role_id, r.name as role_name 
                   FROM users u 
                   LEFT JOIN user_roles ur ON u.id = ur.user_id 
                   LEFT JOIN roles r ON ur.role_id = r.id 
@@ -62,7 +62,7 @@ class User {
      * Get user by username
      */
     public function getByUsername($username) {
-        $query = "SELECT u.*, r.name as role_name 
+        $query = "SELECT u.*, ur.role_id, r.name as role_name 
                   FROM users u 
                   LEFT JOIN user_roles ur ON u.id = ur.user_id 
                   LEFT JOIN roles r ON ur.role_id = r.id 

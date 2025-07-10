@@ -7,6 +7,8 @@
 $pageTitle = 'รายงานเอกสารตามหมวดหมู่';
 $pageDescription = 'รายงานเอกสารจำแนกตามหมวดหมู่';
 $pageIcon = 'fas fa-folder';
+
+require_once __DIR__ . '/../includes/functions.php';
 $breadcrumb = generateReportBreadcrumb([
     ['name' => 'รายงานเอกสาร', 'url' => REPORTS_URL . '/documents/'],
     ['name' => 'รายงานตามหมวดหมู่']

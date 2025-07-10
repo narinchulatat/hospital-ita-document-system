@@ -7,6 +7,7 @@
 $pageTitle = 'ระบบรายงาน';
 $pageDescription = 'ระบบรายงานครบถ้วนสำหรับโรงพยาบาล ITA';
 $pageIcon = 'fas fa-chart-bar';
+require_once __DIR__ . '/includes/functions.php';
 $breadcrumb = generateReportBreadcrumb();
 
 // Include header

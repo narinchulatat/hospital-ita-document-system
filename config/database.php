@@ -5,7 +5,7 @@
 
 // Database connection settings
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'ita_hospital_db');
+define('DB_NAME', 'ita_hospital_db2');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/functions.php';
 /**
  * Document Summary Report
  */
@@ -58,6 +59,7 @@ $monthlyStats = $db->fetchAll("
     GROUP BY DATE_FORMAT(created_at, '%Y-%m')
     ORDER BY month DESC
 ");
+
 
 // Get top file types
 $fileTypeStats = $db->fetchAll("

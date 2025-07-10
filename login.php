@@ -28,6 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($authenticatedUser) {
                 loginUser($authenticatedUser);
                 
+                // Debug: Check if role_id is set
+                error_log("User authenticated: " . print_r($authenticatedUser, true));
+                error_log("Redirecting to: " . getRoleRedirectUrl($authenticatedUser['role_id']));
+                
                 // Redirect to appropriate dashboard
                 redirectTo(getRoleRedirectUrl($authenticatedUser['role_id']));
             } else {

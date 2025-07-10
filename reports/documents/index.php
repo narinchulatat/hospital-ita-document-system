@@ -13,6 +13,7 @@ $breadcrumb = generateReportBreadcrumb([
 
 // Include header
 include_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 // Check permission
 if (!hasReportPermission('documents')) {
