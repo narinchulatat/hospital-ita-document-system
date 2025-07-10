@@ -296,4 +296,74 @@ class Setting {
             }
         }
     }
+    
+    /**
+     * Get setting by key name
+     */
+    public function getByKey($keyName) {
+        $query = "SELECT * FROM settings WHERE key_name = ?";
+        return $this->db->fetch($query, [$keyName]);
+    }
+    
+    /**
+     * Get setting by ID
+     */
+    public function getById($id) {
+        $query = "SELECT * FROM settings WHERE id = ?";
+        return $this->db->fetch($query, [$id]);
+    }
+    
+    /**
+     * Create new setting
+     */
+    public function create($data) {
+        $data['value'] = $this->prepareValue($data['value'], $data['data_type']);
+        
+        $settingId = $this->db->insert('settings', $data);
+        
+        // Log activity
+        logActivity(ACTION_CREATE, 'settings', $settingId, null, $data);
+        
+        return $settingId;
+    }
+    
+    /**
+     * Update setting
+     */
+    public function update($id, $data) {
+        $oldData = $this->getById($id);
+        
+        if (isset($data['value'])) {
+            $data['value'] = $this->prepareValue($data['value'], $data['data_type'] ?? $oldData['data_type']);
+        }
+        
+        $result = $this->db->update('settings', $data, ['id' => $id]);
+        
+        if ($result) {
+            // Log activity
+            logActivity(ACTION_UPDATE, 'settings', $id, $oldData, $data);
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Delete setting by ID
+     */
+    public function deleteById($id) {
+        $setting = $this->getById($id);
+        
+        if (!$setting) {
+            return false;
+        }
+        
+        $result = $this->db->delete('settings', ['id' => $id]);
+        
+        if ($result) {
+            // Log activity
+            logActivity(ACTION_DELETE, 'settings', $id, $setting, null);
+        }
+        
+        return $result;
+    }
 }
