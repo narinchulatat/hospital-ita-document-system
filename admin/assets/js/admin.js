@@ -1,14 +1,11 @@
-// Admin Panel JavaScript
+// Admin Panel JavaScript - TailwindCSS Version
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Initialize admin features
     initializeAdmin();
     
     // Sidebar toggle functionality
     initializeSidebar();
-    
-    // Initialize tooltips and popovers
-    initializeBootstrapComponents();
     
     // Initialize AJAX setup
     initializeAjax();
@@ -24,50 +21,32 @@ $(document).ready(function() {
  */
 function initializeAdmin() {
     // Add loading state to buttons
-    $('.btn-loading').on('click', function() {
-        const $btn = $(this);
-        const originalText = $btn.html();
-        
-        $btn.prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin me-2"></i>กำลังดำเนินการ...');
-        
-        // Re-enable after 10 seconds (fallback)
-        setTimeout(() => {
-            $btn.prop('disabled', false).html(originalText);
-        }, 10000);
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-loading')) {
+            const btn = e.target;
+            const originalText = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>กำลังดำเนินการ...';
+            
+            // Re-enable after 10 seconds (fallback)
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }, 10000);
+        }
     });
     
-    // Initialize Select2
-    if ($.fn.select2) {
-        $('.select2').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
-        });
-        
-        $('.select2-multiple').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'เลือกรายการ...',
-            allowClear: true
-        });
-    }
-    
-    // Initialize date pickers
-    if ($.fn.datepicker) {
-        $('.datepicker').datepicker({
-            format: 'yyyy-mm-dd',
-            autoclose: true,
-            todayHighlight: true,
-            language: 'th'
-        });
-    }
-    
     // Auto-resize textareas
-    $('textarea[data-auto-resize]').each(function() {
-        this.setAttribute('style', 'height:' + (this.scrollHeight) + 'px;overflow-y:hidden;');
-    }).on('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
+    const autoResizeTextareas = document.querySelectorAll('textarea[data-auto-resize]');
+    autoResizeTextareas.forEach(function(textarea) {
+        textarea.style.height = textarea.scrollHeight + 'px';
+        textarea.style.overflowY = 'hidden';
+        
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
     });
 }
 
@@ -75,78 +54,92 @@ function initializeAdmin() {
  * Initialize sidebar functionality
  */
 function initializeSidebar() {
-    const sidebar = $('#sidebar');
-    const mainContent = $('#main-content');
-    const sidebarToggle = $('#sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    
+    if (!sidebar || !mainContent || !sidebarToggle) return;
     
     // Toggle sidebar
-    sidebarToggle.on('click', function() {
-        sidebar.toggleClass('collapsed');
-        mainContent.toggleClass('expanded');
+    sidebarToggle.addEventListener('click', function() {
+        const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+        
+        if (isCollapsed) {
+            sidebar.classList.remove('sidebar-collapsed', 'w-18');
+            sidebar.classList.add('w-64');
+            mainContent.classList.remove('main-content-expanded');
+        } else {
+            sidebar.classList.add('sidebar-collapsed', 'w-18');
+            sidebar.classList.remove('w-64');
+            mainContent.classList.add('main-content-expanded');
+        }
+        
+        // Toggle text visibility
+        const textElements = sidebar.querySelectorAll('.nav-text, .brand-text');
+        textElements.forEach(el => {
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                el.classList.add('hidden');
+            } else {
+                el.classList.remove('hidden');
+            }
+        });
         
         // Save state to localStorage
-        const isCollapsed = sidebar.hasClass('collapsed');
-        localStorage.setItem('sidebarCollapsed', isCollapsed);
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('sidebar-collapsed'));
     });
     
     // Restore sidebar state
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState === 'true') {
-        sidebar.addClass('collapsed');
-        mainContent.addClass('expanded');
+        sidebar.classList.add('sidebar-collapsed', 'w-18');
+        sidebar.classList.remove('w-64');
+        mainContent.classList.add('main-content-expanded');
+        
+        const textElements = sidebar.querySelectorAll('.nav-text, .brand-text');
+        textElements.forEach(el => el.classList.add('hidden'));
     }
     
-    // Mobile sidebar overlay
+    // Mobile sidebar handling
     if (window.innerWidth <= 768) {
-        sidebarToggle.on('click', function() {
-            sidebar.toggleClass('show');
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('show');
             
-            // Add overlay
-            if (sidebar.hasClass('show')) {
-                $('<div class="sidebar-overlay"></div>')
-                    .appendTo('body')
-                    .on('click', function() {
-                        sidebar.removeClass('show');
-                        $(this).remove();
-                    });
-            } else {
-                $('.sidebar-overlay').remove();
+            // Add/remove overlay
+            let overlay = document.querySelector('.sidebar-overlay');
+            if (sidebar.classList.contains('show') && !overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'sidebar-overlay fixed inset-0 bg-black bg-opacity-50 z-40';
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    this.remove();
+                });
+                document.body.appendChild(overlay);
+            } else if (overlay) {
+                overlay.remove();
             }
         });
     }
     
     // Submenu toggle
-    $('.nav-link[data-bs-toggle="collapse"]').on('click', function(e) {
-        e.preventDefault();
-        const target = $($(this).data('bs-target'));
-        
-        // Close other submenus
-        $('.submenu.show').not(target).removeClass('show');
-        
-        // Toggle current submenu
-        target.toggleClass('show');
-    });
-}
-
-/**
- * Initialize Bootstrap components
- */
-function initializeBootstrapComponents() {
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Initialize popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    const popoverList = popoverTriggerList.map(function(popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-    
-    // Initialize modals with backdrop options
-    $('.modal').on('show.bs.modal', function() {
-        $(this).find('.modal-body').scrollTop(0);
+    const submenuToggles = document.querySelectorAll('.nav-link[data-toggle="collapse"]');
+    submenuToggles.forEach(function(toggle) {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.dataset.target);
+            
+            if (target) {
+                // Close other submenus
+                const otherSubmenus = document.querySelectorAll('.submenu.show');
+                otherSubmenus.forEach(function(submenu) {
+                    if (submenu !== target) {
+                        submenu.classList.remove('show');
+                    }
+                });
+                
+                // Toggle current submenu
+                target.classList.toggle('show');
+            }
+        });
     });
 }
 
@@ -154,74 +147,86 @@ function initializeBootstrapComponents() {
  * Initialize AJAX setup
  */
 function initializeAjax() {
-    // Set default AJAX options
-    $.ajaxSetup({
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        beforeSend: function(xhr, settings) {
-            // Add CSRF token if available
-            const token = $('meta[name="csrf-token"]').attr('content');
-            if (token) {
-                xhr.setRequestHeader('X-CSRF-TOKEN', token);
+    // Set default AJAX options if jQuery is available
+    if (typeof $ !== 'undefined') {
+        $.ajaxSetup({
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            beforeSend: function(xhr, settings) {
+                // Add CSRF token if available
+                const token = document.querySelector('meta[name="csrf-token"]');
+                if (token) {
+                    xhr.setRequestHeader('X-CSRF-TOKEN', token.getAttribute('content'));
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+                
+                if (xhr.status === 401) {
+                    window.location.href = '/admin/login.php';
+                } else if (xhr.status === 403) {
+                    showAlert('คุณไม่มีสิทธิ์ในการดำเนินการนี้', 'error');
+                } else if (xhr.status === 500) {
+                    showAlert('เกิดข้อผิดพลาดเซิร์ฟเวอร์', 'error');
+                } else {
+                    showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                }
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('AJAX Error:', error);
-            
-            if (xhr.status === 401) {
-                window.location.href = '/admin/login.php';
-            } else if (xhr.status === 403) {
-                showAlert('คุณไม่มีสิทธิ์ในการดำเนินการนี้', 'error');
-            } else if (xhr.status === 500) {
-                showAlert('เกิดข้อผิดพลาดเซิร์ฟเวอร์', 'error');
-            } else {
-                showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-            }
-        }
-    });
+        });
+    }
 }
 
 /**
  * Initialize delete confirmation
  */
 function initializeDeleteConfirmation() {
-    $(document).on('click', '.btn-delete, .delete-btn', function(e) {
-        e.preventDefault();
-        
-        const url = $(this).attr('href') || $(this).data('url');
-        const title = $(this).data('title') || 'ยืนยันการลบ';
-        const text = $(this).data('text') || 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้';
-        
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'ใช่, ลบเลย!',
-            cancelButtonText: 'ยกเลิก',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Show loading
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-delete') || e.target.classList.contains('delete-btn') || e.target.closest('.btn-delete')) {
+            e.preventDefault();
+            
+            const btn = e.target.closest('.btn-delete') || e.target;
+            const url = btn.getAttribute('href') || btn.dataset.url;
+            const title = btn.dataset.title || 'ยืนยันการลบ';
+            const text = btn.dataset.text || 'คุณแน่ใจหรือไม่ที่จะลบรายการนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้';
+            
+            if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: 'กำลังลบ...',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
+                    title: title,
+                    text: text,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'ใช่, ลบเลย!',
+                    cancelButtonText: 'ยกเลิก',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading
+                        Swal.fire({
+                            title: 'กำลังลบ...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        // Perform delete action
+                        if (btn.classList.contains('ajax-delete')) {
+                            performAjaxDelete(url);
+                        } else {
+                            window.location.href = url;
+                        }
                     }
                 });
-                
-                // Perform delete action
-                if ($(this).hasClass('ajax-delete')) {
-                    performAjaxDelete(url);
-                } else {
+            } else {
+                // Fallback if SweetAlert2 is not available
+                if (confirm(text)) {
                     window.location.href = url;
                 }
             }
-        });
+        }
     });
 }
 
@@ -229,52 +234,62 @@ function initializeDeleteConfirmation() {
  * Perform AJAX delete
  */
 function performAjaxDelete(url) {
-    $.ajax({
-        url: url,
-        method: 'POST',
-        data: {
-            _method: 'DELETE',
-            csrf_token: $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            Swal.fire({
-                title: 'ลบเรียบร้อย!',
-                text: 'รายการถูกลบเรียบร้อยแล้ว',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => {
-                if (response.redirect) {
-                    window.location.href = response.redirect;
+    if (typeof $ !== 'undefined') {
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: {
+                _method: 'DELETE',
+                csrf_token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            },
+            success: function(response) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'ลบเรียบร้อย!',
+                        text: 'รายการถูกลบเรียบร้อยแล้ว',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        } else {
+                            location.reload();
+                        }
+                    });
                 } else {
                     location.reload();
                 }
-            });
-        },
-        error: function(xhr) {
-            let message = 'เกิดข้อผิดพลาดในการลบ';
-            
-            if (xhr.responseJSON && xhr.responseJSON.message) {
-                message = xhr.responseJSON.message;
+            },
+            error: function(xhr) {
+                let message = 'เกิดข้อผิดพลาดในการลบ';
+                
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'เกิดข้อผิดพลาด!',
+                        text: message,
+                        icon: 'error'
+                    });
+                } else {
+                    alert(message);
+                }
             }
-            
-            Swal.fire({
-                title: 'เกิดข้อผิดพลาด!',
-                text: message,
-                icon: 'error'
-            });
-        }
-    });
+        });
+    }
 }
 
 /**
  * Initialize form validation
  */
 function initializeFormValidation() {
-    // Bootstrap validation
+    // HTML5 validation
     const forms = document.querySelectorAll('.needs-validation');
     
-    Array.prototype.slice.call(forms).forEach(function(form) {
+    forms.forEach(function(form) {
         form.addEventListener('submit', function(event) {
             if (!form.checkValidity()) {
                 event.preventDefault();
@@ -292,42 +307,75 @@ function initializeFormValidation() {
     });
     
     // Custom validation rules
-    $('input[data-validate="email"]').on('blur', function() {
-        const email = $(this).val();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        if (email && !emailRegex.test(email)) {
-            $(this).addClass('is-invalid');
-            $(this).siblings('.invalid-feedback').text('รูปแบบอีเมลไม่ถูกต้อง');
-        } else {
-            $(this).removeClass('is-invalid');
-        }
+    const emailFields = document.querySelectorAll('input[data-validate="email"]');
+    emailFields.forEach(function(field) {
+        field.addEventListener('blur', function() {
+            const email = this.value;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('border-red-500');
+                showFieldError(this, 'รูปแบบอีเมลไม่ถูกต้อง');
+            } else {
+                this.classList.remove('border-red-500');
+                hideFieldError(this);
+            }
+        });
     });
     
-    $('input[data-validate="phone"]').on('blur', function() {
-        const phone = $(this).val();
-        const phoneRegex = /^[0-9]{9,10}$/;
-        
-        if (phone && !phoneRegex.test(phone)) {
-            $(this).addClass('is-invalid');
-            $(this).siblings('.invalid-feedback').text('หมายเลขโทรศัพท์ไม่ถูกต้อง');
-        } else {
-            $(this).removeClass('is-invalid');
-        }
+    const phoneFields = document.querySelectorAll('input[data-validate="phone"]');
+    phoneFields.forEach(function(field) {
+        field.addEventListener('blur', function() {
+            const phone = this.value;
+            const phoneRegex = /^[0-9]{9,10}$/;
+            
+            if (phone && !phoneRegex.test(phone)) {
+                this.classList.add('border-red-500');
+                showFieldError(this, 'หมายเลขโทรศัพท์ไม่ถูกต้อง');
+            } else {
+                this.classList.remove('border-red-500');
+                hideFieldError(this);
+            }
+        });
     });
     
     // Password confirmation
-    $('input[data-confirm]').on('blur', function() {
-        const password = $($(this).data('confirm')).val();
-        const confirmPassword = $(this).val();
-        
-        if (confirmPassword && password !== confirmPassword) {
-            $(this).addClass('is-invalid');
-            $(this).siblings('.invalid-feedback').text('รหัสผ่านไม่ตรงกัน');
-        } else {
-            $(this).removeClass('is-invalid');
-        }
+    const confirmFields = document.querySelectorAll('input[data-confirm]');
+    confirmFields.forEach(function(field) {
+        field.addEventListener('blur', function() {
+            const password = document.querySelector(this.dataset.confirm)?.value;
+            const confirmPassword = this.value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                this.classList.add('border-red-500');
+                showFieldError(this, 'รหัสผ่านไม่ตรงกัน');
+            } else {
+                this.classList.remove('border-red-500');
+                hideFieldError(this);
+            }
+        });
     });
+}
+
+/**
+ * Show field error message
+ */
+function showFieldError(field, message) {
+    hideFieldError(field);
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error text-red-500 text-sm mt-1';
+    errorDiv.textContent = message;
+    field.parentNode.appendChild(errorDiv);
+}
+
+/**
+ * Hide field error message
+ */
+function hideFieldError(field) {
+    const existingError = field.parentNode.querySelector('.field-error');
+    if (existingError) {
+        existingError.remove();
+    }
 }
 
 /**
@@ -335,7 +383,12 @@ function initializeFormValidation() {
  */
 function initializeAutoHideAlerts() {
     setTimeout(function() {
-        $('.alert-auto-dismiss').fadeOut('slow');
+        const alerts = document.querySelectorAll('.alert-auto-dismiss');
+        alerts.forEach(function(alert) {
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => alert.remove(), 500);
+        });
     }, 5000);
 }
 
@@ -343,29 +396,60 @@ function initializeAutoHideAlerts() {
  * Show alert message
  */
 function showAlert(message, type = 'info', duration = 5000) {
-    const alertClass = type === 'error' ? 'danger' : type;
-    const iconClass = type === 'success' ? 'check-circle' : 
-                     type === 'error' || type === 'danger' ? 'exclamation-triangle' : 
-                     type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+    const alertColors = {
+        'success': 'bg-green-50 border-green-400 text-green-700',
+        'error': 'bg-red-50 border-red-400 text-red-700',
+        'danger': 'bg-red-50 border-red-400 text-red-700',
+        'warning': 'bg-yellow-50 border-yellow-400 text-yellow-700',
+        'info': 'bg-blue-50 border-blue-400 text-blue-700'
+    };
+    
+    const iconClasses = {
+        'success': 'fa-check-circle text-green-400',
+        'error': 'fa-exclamation-triangle text-red-400',
+        'danger': 'fa-exclamation-triangle text-red-400',
+        'warning': 'fa-exclamation-triangle text-yellow-400',
+        'info': 'fa-info-circle text-blue-400'
+    };
+    
+    const alertClass = alertColors[type] || alertColors['info'];
+    const iconClass = iconClasses[type] || iconClasses['info'];
     
     const alertHtml = `
-        <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fas fa-${iconClass} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-dismissible border-l-4 p-4 mb-4 rounded ${alertClass}">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas ${iconClass}"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm">${message}</p>
+                </div>
+                <div class="ml-auto pl-3">
+                    <button class="inline-flex text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     `;
     
     // Remove existing alerts
-    $('.alert-dismissible').remove();
+    const existingAlerts = document.querySelectorAll('.alert-dismissible');
+    existingAlerts.forEach(alert => alert.remove());
     
     // Add new alert
-    $('.container-fluid').prepend(alertHtml);
+    const container = document.querySelector('.p-6') || document.body;
+    container.insertAdjacentHTML('afterbegin', alertHtml);
     
     // Auto-hide after duration
     if (duration > 0) {
         setTimeout(() => {
-            $('.alert-dismissible').fadeOut('slow');
+            const alert = document.querySelector('.alert-dismissible');
+            if (alert) {
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => alert.remove(), 500);
+            }
         }, duration);
     }
 }
@@ -388,99 +472,6 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-/**
- * Debounce function
- */
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction() {
-        const context = this;
-        const args = arguments;
-        
-        const later = function() {
-            timeout = null;
-            if (!immediate) func.apply(context, args);
-        };
-        
-        const callNow = immediate && !timeout;
-        
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        
-        if (callNow) func.apply(context, args);
-    };
-}
-
-/**
- * Copy text to clipboard
- */
-function copyToClipboard(text) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-            showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
-        });
-    } else {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
-    }
-}
-
-/**
- * Show loading overlay
- */
-function showLoading(message = 'กำลังโหลด...') {
-    if ($('#loadingOverlay').length === 0) {
-        const overlay = `
-            <div id="loadingOverlay" class="loading-overlay">
-                <div class="loading-content">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <div class="loading-text mt-3">${message}</div>
-                </div>
-            </div>
-        `;
-        $('body').append(overlay);
-    }
-    $('#loadingOverlay').show();
-}
-
-/**
- * Hide loading overlay
- */
-function hideLoading() {
-    $('#loadingOverlay').hide();
-}
-
-/**
- * Validate form data
- */
-function validateForm(formData) {
-    const errors = [];
-    
-    // Add custom validation logic here
-    
-    return errors;
-}
-
-/**
- * Generate random string
- */
-function generateRandomString(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
 }
 
 /**
@@ -509,26 +500,112 @@ function formatThaiDate(dateString, showTime = false) {
 }
 
 /**
+ * Copy text to clipboard
+ */
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
+        });
+    } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
+    }
+}
+
+/**
+ * Show loading overlay
+ */
+function showLoading(message = 'กำลังโหลด...') {
+    let loadingOverlay = document.getElementById('loadingOverlay');
+    if (!loadingOverlay) {
+        const overlay = `
+            <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-lg text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <div class="text-gray-700">${message}</div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', overlay);
+    } else {
+        loadingOverlay.style.display = 'flex';
+    }
+}
+
+/**
+ * Hide loading overlay
+ */
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+/**
+ * Debounce function
+ */
+function debounce(func, wait, immediate) {
+    let timeout;
+    return function executedFunction() {
+        const context = this;
+        const args = arguments;
+        
+        const later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        
+        const callNow = immediate && !timeout;
+        
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        
+        if (callNow) func.apply(context, args);
+    };
+}
+
+/**
+ * Generate random string
+ */
+function generateRandomString(length = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+/**
  * Initialize drag and drop for file upload
  */
 function initializeDragAndDrop(element, callback) {
-    const $element = $(element);
+    const el = document.querySelector(element);
+    if (!el) return;
     
-    $element.on('dragover', function(e) {
+    el.addEventListener('dragover', function(e) {
         e.preventDefault();
-        $(this).addClass('drag-over');
+        this.classList.add('border-blue-500', 'bg-blue-50');
     });
     
-    $element.on('dragleave', function(e) {
+    el.addEventListener('dragleave', function(e) {
         e.preventDefault();
-        $(this).removeClass('drag-over');
+        this.classList.remove('border-blue-500', 'bg-blue-50');
     });
     
-    $element.on('drop', function(e) {
+    el.addEventListener('drop', function(e) {
         e.preventDefault();
-        $(this).removeClass('drag-over');
+        this.classList.remove('border-blue-500', 'bg-blue-50');
         
-        const files = e.originalEvent.dataTransfer.files;
+        const files = e.dataTransfer.files;
         if (callback && typeof callback === 'function') {
             callback(files);
         }
@@ -546,6 +623,5 @@ window.AdminJS = {
     copyToClipboard,
     debounce,
     generateRandomString,
-    validateForm,
     initializeDragAndDrop
 };

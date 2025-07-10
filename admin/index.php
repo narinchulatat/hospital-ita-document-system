@@ -1,6 +1,6 @@
 <?php
 $pageTitle = 'แดชบอร์ดผู้ดูแลระบบ';
-require_once '../includes/header.php';
+require_once 'includes/header.php';
 
 // Require admin role
 requireRole(ROLE_ADMIN);
@@ -348,4 +348,4 @@ function getTableName($table) {
 }
 ?>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php require_once 'includes/footer.php'; ?>
