@@ -9,6 +9,81 @@ require_once 'functions.php';
 
 $pageTitle = $pageTitle ?? 'ระบบผู้ดูแล';
 $currentPage = getCurrentPage();
+
+// Define admin menu structure
+$adminMenu = [
+    'dashboard' => [
+        'title' => 'แดชบอร์ด',
+        'url' => '/admin/',
+        'icon' => 'fa-tachometer-alt',
+        'permission' => 'admin.dashboard'
+    ],
+    'users' => [
+        'title' => 'จัดการผู้ใช้',
+        'url' => '/admin/users/',
+        'icon' => 'fa-users',
+        'permission' => 'admin.users',
+        'submenu' => [
+            'list' => ['title' => 'รายการผู้ใช้', 'url' => '/admin/users/'],
+            'create' => ['title' => 'เพิ่มผู้ใช้', 'url' => '/admin/users/create.php']
+        ]
+    ],
+    'documents' => [
+        'title' => 'จัดการเอกสาร',
+        'url' => '/admin/documents/',
+        'icon' => 'fa-file-alt',
+        'permission' => 'admin.documents',
+        'submenu' => [
+            'list' => ['title' => 'รายการเอกสาร', 'url' => '/admin/documents/'],
+            'create' => ['title' => 'เพิ่มเอกสาร', 'url' => '/admin/documents/create.php'],
+            'approve' => ['title' => 'อนุมัติเอกสาร', 'url' => '/admin/documents/approve.php']
+        ]
+    ],
+    'categories' => [
+        'title' => 'จัดการหมวดหมู่',
+        'url' => '/admin/categories/',
+        'icon' => 'fa-folder',
+        'permission' => 'admin.categories'
+    ],
+    'roles' => [
+        'title' => 'จัดการบทบาท',
+        'url' => '/admin/roles/',
+        'icon' => 'fa-user-shield',
+        'permission' => 'admin.roles'
+    ],
+    'reports' => [
+        'title' => 'รายงาน',
+        'url' => '/admin/reports/',
+        'icon' => 'fa-chart-bar',
+        'permission' => 'admin.reports'
+    ],
+    'settings' => [
+        'title' => 'ตั้งค่าระบบ',
+        'url' => '/admin/settings/',
+        'icon' => 'fa-cog',
+        'permission' => 'admin.settings'
+    ]
+];
+
+// Function to check menu permissions
+function hasMenuPermission($permission) {
+    // For now, just check if user is admin
+    return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
+}
+
+// Function to check if menu is active
+function isMenuActive($url, $submenu = []) {
+    $currentUrl = $_SERVER['REQUEST_URI'];
+    if (strpos($currentUrl, $url) !== false) {
+        return true;
+    }
+    foreach ($submenu as $item) {
+        if (strpos($currentUrl, $item['url']) !== false) {
+            return true;
+        }
+    }
+    return false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -17,327 +92,161 @@ $currentPage = getCurrentPage();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?> - <?= SITE_NAME ?></title>
     
-    <!-- Fonts -->
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: {
+                    'sans': ['Sarabun', 'sans-serif'],
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts - Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
+    <!-- Font Awesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- DataTables CSS -->
-    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- DataTables TailwindCSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- SweetAlert2 -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
-    
-    <!-- Admin CSS -->
-    <link href="<?= BASE_URL ?>/admin/assets/css/admin.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/admin/assets/css/dashboard.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/admin/assets/css/tables.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/admin/assets/css/forms.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
-        body {
-            font-family: 'Sarabun', sans-serif;
-            background-color: #f8f9fa;
+        .sidebar-collapsed .nav-text { display: none; }
+        .sidebar-collapsed .brand-text { display: none; }
+        .sidebar-collapsed { width: 4rem !important; }
+        .main-expanded { margin-left: 4rem !important; }
+        
+        /* Custom Select2 TailwindCSS styling */
+        .select2-container--default .select2-selection--single {
+            @apply border border-gray-300 rounded-md;
+            height: 2.5rem;
+        }
+        .select2-container--default .select2-selection--multiple {
+            @apply border border-gray-300 rounded-md min-h-[2.5rem];
+        }
+        .select2-dropdown {
+            @apply border border-gray-300 rounded-md;
         }
         
-        .sidebar {
-            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-            min-height: 100vh;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 250px;
-            z-index: 1000;
-            transition: all 0.3s ease;
+        /* DataTables TailwindCSS overrides */
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            @apply px-3 py-1 mx-1 text-sm border border-gray-300 rounded;
         }
-        
-        .sidebar.collapsed {
-            width: 70px;
-        }
-        
-        .main-content {
-            margin-left: 250px;
-            transition: all 0.3s ease;
-            min-height: 100vh;
-        }
-        
-        .main-content.expanded {
-            margin-left: 70px;
-        }
-        
-        .navbar {
-            background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .sidebar-brand {
-            padding: 1rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .sidebar-brand h4 {
-            color: white;
-            margin: 0;
-            font-weight: 600;
-        }
-        
-        .sidebar-nav {
-            padding: 1rem 0;
-        }
-        
-        .nav-item {
-            margin: 0.25rem 0;
-        }
-        
-        .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 0.75rem 1rem;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: white;
-        }
-        
-        .nav-link.active {
-            background-color: rgba(255,255,255,0.2);
-            color: white;
-            border-right: 3px solid #3498db;
-        }
-        
-        .nav-link i {
-            width: 20px;
-            margin-right: 0.75rem;
-            text-align: center;
-        }
-        
-        .submenu {
-            background-color: rgba(0,0,0,0.2);
-        }
-        
-        .submenu .nav-link {
-            padding-left: 3rem;
-            font-size: 0.9rem;
-        }
-        
-        .page-header {
-            background: white;
-            padding: 1.5rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .page-title {
-            font-size: 1.75rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin: 0;
-        }
-        
-        .page-subtitle {
-            color: #6c757d;
-            margin: 0.25rem 0 0 0;
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-2px);
-        }
-        
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .btn {
-            border-radius: 8px;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-            border: none;
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-            border: none;
-        }
-        
-        .btn-warning {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-            border: none;
-        }
-        
-        .btn-danger {
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            border: none;
-        }
-        
-        .alert {
-            border: none;
-            border-radius: 8px;
-        }
-        
-        .table {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
-            font-weight: 600;
-        }
-        
-        .breadcrumb {
-            background: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .breadcrumb-item a {
-            color: #6c757d;
-            text-decoration: none;
-        }
-        
-        .breadcrumb-item.active {
-            color: #2c3e50;
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.show {
-                transform: translateX(0);
-            }
-            
-            .main-content {
-                margin-left: 0;
-            }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            @apply bg-blue-500 text-white border-blue-500;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 font-sans">
     <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <h4><i class="fas fa-hospital me-2"></i><span class="brand-text">Admin Panel</span></h4>
-        </div>
-        
-        <div class="sidebar-nav">
-            <?php foreach ($adminMenu as $key => $menu): ?>
-                <?php if (hasMenuPermission($menu['permission'])): ?>
-                    <div class="nav-item">
-                        <a href="<?= BASE_URL . $menu['url'] ?>" 
-                           class="nav-link <?= isMenuActive($menu['url'], $menu['submenu'] ?? []) ? 'active' : '' ?>">
-                            <i class="fas <?= $menu['icon'] ?>"></i>
-                            <span class="nav-text"><?= $menu['title'] ?></span>
-                        </a>
-                        
-                        <?php if (!empty($menu['submenu']) && isMenuActive($menu['url'], $menu['submenu'])): ?>
-                            <div class="submenu">
-                                <?php foreach ($menu['submenu'] as $subkey => $submenu): ?>
-                                    <a href="<?= BASE_URL . $submenu['url'] ?>" 
-                                       class="nav-link <?= getCurrentPage() === $submenu['url'] ? 'active' : '' ?>">
-                                        <i class="fas fa-circle"></i>
-                                        <span class="nav-text"><?= $submenu['title'] ?></span>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-    </nav>
+    <?php include 'sidebar.php'; ?>
     
     <!-- Main Content -->
-    <div class="main-content" id="main-content">
+    <div class="main-content ml-64 transition-all duration-300 ease-in-out" id="main-content">
         <!-- Top Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-light">
-            <div class="container-fluid">
-                <button class="btn btn-outline-secondary me-3" id="sidebarToggle" type="button">
-                    <i class="fas fa-bars"></i>
-                </button>
-                
-                <div class="navbar-nav ms-auto">
-                    <!-- Notifications -->
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-bell"></i>
-                            <span class="badge bg-danger rounded-pill">0</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><span class="dropdown-item-text">ไม่มีการแจ้งเตือน</span></li>
-                        </ul>
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button class="text-gray-500 hover:text-gray-700 focus:outline-none lg:hidden" id="sidebarToggle">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <button class="text-gray-500 hover:text-gray-700 focus:outline-none hidden lg:block ml-4" id="sidebarCollapseToggle">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
                     </div>
                     
-                    <!-- User Menu -->
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-1"></i>
-                            <?= htmlspecialchars($_SESSION['first_name'] ?? 'Admin') ?>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="<?= BASE_URL ?>/admin/profile/"><i class="fas fa-user me-2"></i>โปรไฟล์</a></li>
-                            <li><a class="dropdown-item" href="<?= BASE_URL ?>/admin/profile/password.php"><i class="fas fa-key me-2"></i>เปลี่ยนรหัสผ่าน</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="<?= BASE_URL ?>/admin/logout.php"><i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ</a></li>
-                        </ul>
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <div class="relative">
+                            <button class="text-gray-500 hover:text-gray-700 relative focus:outline-none" id="notificationBtn">
+                                <i class="fas fa-bell text-xl"></i>
+                                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden" id="notificationBadge">0</span>
+                            </button>
+                            <!-- Notification Dropdown -->
+                            <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 hidden" id="notificationDropdown">
+                                <div class="p-4 border-b border-gray-200">
+                                    <h3 class="text-lg font-semibold text-gray-900">การแจ้งเตือน</h3>
+                                </div>
+                                <div class="max-h-96 overflow-y-auto">
+                                    <div class="p-4 text-center text-gray-500">
+                                        ไม่มีการแจ้งเตือนใหม่
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Menu -->
+                        <div class="relative">
+                            <button class="flex items-center text-sm text-gray-500 hover:text-gray-700 focus:outline-none" id="userMenuBtn">
+                                <i class="fas fa-user-circle text-2xl mr-2"></i>
+                                <span class="hidden md:block"><?= htmlspecialchars($_SESSION['first_name'] ?? 'Admin') ?></span>
+                                <i class="fas fa-chevron-down ml-2"></i>
+                            </button>
+                            
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden" id="userMenuDropdown">
+                                <div class="px-4 py-3 border-b border-gray-200">
+                                    <p class="text-sm text-gray-900"><?= htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']) ?></p>
+                                    <p class="text-xs text-gray-500"><?= htmlspecialchars($_SESSION['username']) ?></p>
+                                </div>
+                                <div class="py-1">
+                                    <a href="<?= BASE_URL ?>/admin/profile/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-user mr-2"></i>โปรไฟล์
+                                    </a>
+                                    <a href="<?= BASE_URL ?>/admin/settings/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-cog mr-2"></i>ตั้งค่า
+                                    </a>
+                                    <div class="border-t border-gray-200"></div>
+                                    <a href="<?= BASE_URL ?>/admin/logout.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>ออกจากระบบ
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </nav>
         
         <!-- Page Content -->
-        <div class="container-fluid py-4">
+        <div class="p-6">
             <?php if (isset($pageTitle)): ?>
-            <div class="page-header">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h1 class="page-title"><?= htmlspecialchars($pageTitle) ?></h1>
+            <div class="mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div class="mb-4 sm:mb-0">
+                        <h1 class="text-2xl font-bold text-gray-900"><?= htmlspecialchars($pageTitle) ?></h1>
                         <?php if (isset($pageSubtitle)): ?>
-                        <p class="page-subtitle"><?= htmlspecialchars($pageSubtitle) ?></p>
+                        <p class="text-gray-600 mt-1"><?= htmlspecialchars($pageSubtitle) ?></p>
                         <?php endif; ?>
                     </div>
-                    <div class="col-auto">
-                        <?php include 'breadcrumb.php'; ?>
+                    <div>
+                        <?php if (file_exists(__DIR__ . '/breadcrumb.php')): ?>
+                            <?php include 'breadcrumb.php'; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
             <?php endif; ?>
             
             <!-- Flash Messages -->
-            <?php include 'alerts.php'; ?>
+            <?php if (file_exists(__DIR__ . '/alerts.php')): ?>
+                <?php include 'alerts.php'; ?>
+            <?php endif; ?>

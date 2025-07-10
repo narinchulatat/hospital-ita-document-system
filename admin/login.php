@@ -64,143 +64,130 @@ function isAdmin() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เข้าสู่ระบบผู้ดูแล - <?= SITE_NAME ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: {
+                    'sans': ['Sarabun', 'sans-serif'],
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts - Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome 6 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/admin/assets/css/admin.css" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            font-family: 'Sarabun', sans-serif;
-        }
-        .login-container {
-            max-width: 400px;
-            margin: 0 auto;
         }
         .login-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        .login-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 1.5rem 1.5rem;
-            text-align: center;
-        }
-        .login-body {
-            padding: 2rem 1.5rem;
-        }
-        .form-control {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            padding: 12px 15px;
-            transition: all 0.3s ease;
-        }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        .btn-login {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
         }
         .btn-login:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        .input-group-text {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-right: none;
-        }
-        .input-group .form-control {
-            border-left: none;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="login-container">
-            <div class="login-card">
-                <div class="login-header">
-                    <h2 class="mb-0">
-                        <i class="fas fa-shield-alt me-2"></i>
-                        ระบบผู้ดูแล
-                    </h2>
-                    <p class="mb-0 mt-2 opacity-75">เข้าสู่ระบบจัดการ</p>
+<body class="min-h-screen flex items-center justify-center p-4 font-sans">
+    <div class="w-full max-w-md">
+        <div class="login-card rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-8 text-center">
+                <h2 class="text-2xl font-bold mb-2">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    ระบบผู้ดูแล
+                </h2>
+                <p class="text-blue-100">เข้าสู่ระบบจัดการ</p>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-8">
+                <?php if ($error): ?>
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <?= htmlspecialchars($error) ?>
                 </div>
+                <?php endif; ?>
                 
-                <div class="login-body">
-                    <?php if ($error): ?>
-                    <div class="alert alert-danger" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <?= htmlspecialchars($error) ?>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <?php if ($success): ?>
-                    <div class="alert alert-success" role="alert">
-                        <i class="fas fa-check-circle me-2"></i>
-                        <?= htmlspecialchars($success) ?>
-                    </div>
-                    <?php endif; ?>
-                    
-                    <form method="POST" action="">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">ชื่อผู้ใช้</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                                <input type="text" class="form-control" id="username" name="username" 
-                                       value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" 
-                                       placeholder="กรอกชื่อผู้ใช้" required autofocus>
+                <?php if ($success): ?>
+                <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <?= htmlspecialchars($success) ?>
+                </div>
+                <?php endif; ?>
+                
+                <form method="POST" action="" class="space-y-6">
+                    <!-- Username Field -->
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-user text-gray-400"></i>
                             </div>
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" 
+                                   placeholder="กรอกชื่อผู้ใช้" 
+                                   required 
+                                   autofocus
+                                   class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                         </div>
-                        
-                        <div class="mb-4">
-                            <label for="password" class="form-label">รหัสผ่าน</label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-lock"></i>
-                                </span>
-                                <input type="password" class="form-control" id="password" name="password" 
-                                       placeholder="กรอกรหัสผ่าน" required>
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                    </div>
+                    
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-gray-400"></i>
                             </div>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-login">
-                                <i class="fas fa-sign-in-alt me-2"></i>
-                                เข้าสู่ระบบ
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="กรอกรหัสผ่าน" 
+                                   required
+                                   class="w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                            <button type="button" 
+                                    id="togglePassword" 
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-eye"></i>
                             </button>
                         </div>
-                    </form>
-                    
-                    <div class="text-center mt-3">
-                        <a href="<?= BASE_URL ?>" class="text-decoration-none">
-                            <i class="fas fa-arrow-left me-1"></i>
-                            กลับสู่หน้าหลัก
-                        </a>
                     </div>
+                    
+                    <!-- Login Button -->
+                    <button type="submit" 
+                            class="btn-login w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition duration-200 transform">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        เข้าสู่ระบบ
+                    </button>
+                </form>
+                
+                <!-- Back Link -->
+                <div class="text-center mt-6">
+                    <a href="<?= BASE_URL ?>" class="text-gray-600 hover:text-blue-600 text-sm font-medium transition duration-200">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        กลับสู่หน้าหลัก
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Toggle password visibility
         document.getElementById('togglePassword').addEventListener('click', function() {
@@ -220,6 +207,22 @@ function isAdmin() {
         
         // Auto focus on username field
         document.getElementById('username').focus();
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'ข้อมูลไม่ครบถ้วน',
+                    text: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน',
+                    icon: 'warning',
+                    confirmButtonText: 'ตกลง'
+                });
+            }
+        });
     </script>
 </body>
 </html>

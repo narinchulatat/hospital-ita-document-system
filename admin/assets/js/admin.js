@@ -1,22 +1,14 @@
-// Admin Panel JavaScript
+// Admin Panel JavaScript - TailwindCSS Compatible
 
 $(document).ready(function() {
     // Initialize admin features
     initializeAdmin();
     
-    // Sidebar toggle functionality
-    initializeSidebar();
-    
-    // Initialize tooltips and popovers
-    initializeBootstrapComponents();
-    
-    // Initialize AJAX setup
-    initializeAjax();
-    
     // Initialize common features
     initializeDeleteConfirmation();
     initializeFormValidation();
     initializeAutoHideAlerts();
+    initializeTooltips();
 });
 
 /**
@@ -29,7 +21,7 @@ function initializeAdmin() {
         const originalText = $btn.html();
         
         $btn.prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin me-2"></i>กำลังดำเนินการ...');
+            .html('<i class="fas fa-spinner fa-spin mr-2"></i>กำลังดำเนินการ...');
         
         // Re-enable after 10 seconds (fallback)
         setTimeout(() => {
@@ -37,28 +29,34 @@ function initializeAdmin() {
         }, 10000);
     });
     
-    // Initialize Select2
+    // Initialize Select2 with TailwindCSS styling
     if ($.fn.select2) {
         $('.select2').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
+            width: '100%',
+            dropdownParent: $('body'),
+            language: {
+                noResults: function() {
+                    return "ไม่พบข้อมูล";
+                },
+                searching: function() {
+                    return "กำลังค้นหา...";
+                }
+            }
         });
         
         $('.select2-multiple').select2({
-            theme: 'bootstrap-5',
             width: '100%',
             placeholder: 'เลือกรายการ...',
-            allowClear: true
-        });
-    }
-    
-    // Initialize date pickers
-    if ($.fn.datepicker) {
-        $('.datepicker').datepicker({
-            format: 'yyyy-mm-dd',
-            autoclose: true,
-            todayHighlight: true,
-            language: 'th'
+            allowClear: true,
+            dropdownParent: $('body'),
+            language: {
+                noResults: function() {
+                    return "ไม่พบข้อมูล";
+                },
+                searching: function() {
+                    return "กำลังค้นหา...";
+                }
+            }
         });
     }
     
@@ -69,117 +67,24 @@ function initializeAdmin() {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
     });
-}
-
-/**
- * Initialize sidebar functionality
- */
-function initializeSidebar() {
-    const sidebar = $('#sidebar');
-    const mainContent = $('#main-content');
-    const sidebarToggle = $('#sidebarToggle');
     
-    // Toggle sidebar
-    sidebarToggle.on('click', function() {
-        sidebar.toggleClass('collapsed');
-        mainContent.toggleClass('expanded');
+    // Toggle password visibility
+    $('.toggle-password').on('click', function() {
+        const target = $(this).data('target');
+        const $input = $(target);
+        const $icon = $(this).find('i');
         
-        // Save state to localStorage
-        const isCollapsed = sidebar.hasClass('collapsed');
-        localStorage.setItem('sidebarCollapsed', isCollapsed);
-    });
-    
-    // Restore sidebar state
-    const savedState = localStorage.getItem('sidebarCollapsed');
-    if (savedState === 'true') {
-        sidebar.addClass('collapsed');
-        mainContent.addClass('expanded');
-    }
-    
-    // Mobile sidebar overlay
-    if (window.innerWidth <= 768) {
-        sidebarToggle.on('click', function() {
-            sidebar.toggleClass('show');
-            
-            // Add overlay
-            if (sidebar.hasClass('show')) {
-                $('<div class="sidebar-overlay"></div>')
-                    .appendTo('body')
-                    .on('click', function() {
-                        sidebar.removeClass('show');
-                        $(this).remove();
-                    });
-            } else {
-                $('.sidebar-overlay').remove();
-            }
-        });
-    }
-    
-    // Submenu toggle
-    $('.nav-link[data-bs-toggle="collapse"]').on('click', function(e) {
-        e.preventDefault();
-        const target = $($(this).data('bs-target'));
-        
-        // Close other submenus
-        $('.submenu.show').not(target).removeClass('show');
-        
-        // Toggle current submenu
-        target.toggleClass('show');
-    });
-}
-
-/**
- * Initialize Bootstrap components
- */
-function initializeBootstrapComponents() {
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Initialize popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    const popoverList = popoverTriggerList.map(function(popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-    
-    // Initialize modals with backdrop options
-    $('.modal').on('show.bs.modal', function() {
-        $(this).find('.modal-body').scrollTop(0);
-    });
-}
-
-/**
- * Initialize AJAX setup
- */
-function initializeAjax() {
-    // Set default AJAX options
-    $.ajaxSetup({
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        beforeSend: function(xhr, settings) {
-            // Add CSRF token if available
-            const token = $('meta[name="csrf-token"]').attr('content');
-            if (token) {
-                xhr.setRequestHeader('X-CSRF-TOKEN', token);
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('AJAX Error:', error);
-            
-            if (xhr.status === 401) {
-                window.location.href = '/admin/login.php';
-            } else if (xhr.status === 403) {
-                showAlert('คุณไม่มีสิทธิ์ในการดำเนินการนี้', 'error');
-            } else if (xhr.status === 500) {
-                showAlert('เกิดข้อผิดพลาดเซิร์ฟเวอร์', 'error');
-            } else {
-                showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-            }
+        if ($input.attr('type') === 'password') {
+            $input.attr('type', 'text');
+            $icon.removeClass('fa-eye').addClass('fa-eye-slash');
+        } else {
+            $input.attr('type', 'password');
+            $icon.removeClass('fa-eye-slash').addClass('fa-eye');
         }
     });
+    
+    // Initialize drag and drop for file uploads
+    initializeDragAndDrop();
 }
 
 /**
@@ -198,17 +103,23 @@ function initializeDeleteConfirmation() {
             text: text,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
             confirmButtonText: 'ใช่, ลบเลย!',
             cancelButtonText: 'ยกเลิก',
-            reverseButtons: true
+            reverseButtons: true,
+            customClass: {
+                popup: 'font-sans'
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 // Show loading
                 Swal.fire({
                     title: 'กำลังลบ...',
                     allowOutsideClick: false,
+                    customClass: {
+                        popup: 'font-sans'
+                    },
                     didOpen: () => {
                         Swal.showLoading();
                     }
@@ -242,7 +153,10 @@ function performAjaxDelete(url) {
                 text: 'รายการถูกลบเรียบร้อยแล้ว',
                 icon: 'success',
                 timer: 1500,
-                showConfirmButton: false
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'font-sans'
+                }
             }).then(() => {
                 if (response.redirect) {
                     window.location.href = response.redirect;
@@ -261,7 +175,10 @@ function performAjaxDelete(url) {
             Swal.fire({
                 title: 'เกิดข้อผิดพลาด!',
                 text: message,
-                icon: 'error'
+                icon: 'error',
+                customClass: {
+                    popup: 'font-sans'
+                }
             });
         }
     });
@@ -271,7 +188,7 @@ function performAjaxDelete(url) {
  * Initialize form validation
  */
 function initializeFormValidation() {
-    // Bootstrap validation
+    // TailwindCSS form validation
     const forms = document.querySelectorAll('.needs-validation');
     
     Array.prototype.slice.call(forms).forEach(function(form) {
@@ -284,6 +201,11 @@ function initializeFormValidation() {
                 const firstInvalidField = form.querySelector(':invalid');
                 if (firstInvalidField) {
                     firstInvalidField.focus();
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Add error styling
+                    firstInvalidField.classList.add('border-red-500', 'ring-red-500');
+                    firstInvalidField.classList.remove('border-gray-300');
                 }
             }
             
@@ -297,10 +219,11 @@ function initializeFormValidation() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         
         if (email && !emailRegex.test(email)) {
-            $(this).addClass('is-invalid');
-            $(this).siblings('.invalid-feedback').text('รูปแบบอีเมลไม่ถูกต้อง');
+            $(this).addClass('border-red-500 ring-red-500').removeClass('border-gray-300');
+            showFieldError($(this), 'รูปแบบอีเมลไม่ถูกต้อง');
         } else {
-            $(this).removeClass('is-invalid');
+            $(this).removeClass('border-red-500 ring-red-500').addClass('border-gray-300');
+            hideFieldError($(this));
         }
     });
     
@@ -309,10 +232,11 @@ function initializeFormValidation() {
         const phoneRegex = /^[0-9]{9,10}$/;
         
         if (phone && !phoneRegex.test(phone)) {
-            $(this).addClass('is-invalid');
-            $(this).siblings('.invalid-feedback').text('หมายเลขโทรศัพท์ไม่ถูกต้อง');
+            $(this).addClass('border-red-500 ring-red-500').removeClass('border-gray-300');
+            showFieldError($(this), 'หมายเลขโทรศัพท์ไม่ถูกต้อง');
         } else {
-            $(this).removeClass('is-invalid');
+            $(this).removeClass('border-red-500 ring-red-500').addClass('border-gray-300');
+            hideFieldError($(this));
         }
     });
     
@@ -322,12 +246,29 @@ function initializeFormValidation() {
         const confirmPassword = $(this).val();
         
         if (confirmPassword && password !== confirmPassword) {
-            $(this).addClass('is-invalid');
-            $(this).siblings('.invalid-feedback').text('รหัสผ่านไม่ตรงกัน');
+            $(this).addClass('border-red-500 ring-red-500').removeClass('border-gray-300');
+            showFieldError($(this), 'รหัสผ่านไม่ตรงกัน');
         } else {
-            $(this).removeClass('is-invalid');
+            $(this).removeClass('border-red-500 ring-red-500').addClass('border-gray-300');
+            hideFieldError($(this));
         }
     });
+}
+
+/**
+ * Show field error message
+ */
+function showFieldError($field, message) {
+    hideFieldError($field);
+    const errorDiv = $('<div class="text-red-500 text-sm mt-1 field-error">' + message + '</div>');
+    $field.after(errorDiv);
+}
+
+/**
+ * Hide field error message
+ */
+function hideFieldError($field) {
+    $field.siblings('.field-error').remove();
 }
 
 /**
@@ -335,39 +276,124 @@ function initializeFormValidation() {
  */
 function initializeAutoHideAlerts() {
     setTimeout(function() {
-        $('.alert-auto-dismiss').fadeOut('slow');
+        $('.alert-auto-dismiss').each(function() {
+            $(this).fadeOut('slow');
+        });
     }, 5000);
 }
 
 /**
- * Show alert message
+ * Initialize tooltips for TailwindCSS
+ */
+function initializeTooltips() {
+    $('[data-tooltip]').hover(
+        function() {
+            const tooltipText = $(this).data('tooltip');
+            const tooltip = $('<div class="absolute z-50 px-2 py-1 text-sm text-white bg-gray-800 rounded shadow-lg pointer-events-none" id="tooltip">' + tooltipText + '</div>');
+            $('body').append(tooltip);
+            
+            const position = $(this).offset();
+            const elementWidth = $(this).outerWidth();
+            const elementHeight = $(this).outerHeight();
+            const tooltipWidth = tooltip.outerWidth();
+            const tooltipHeight = tooltip.outerHeight();
+            
+            tooltip.css({
+                top: position.top - tooltipHeight - 5,
+                left: position.left + (elementWidth / 2) - (tooltipWidth / 2)
+            });
+        },
+        function() {
+            $('#tooltip').remove();
+        }
+    );
+}
+
+/**
+ * Show alert message with TailwindCSS
  */
 function showAlert(message, type = 'info', duration = 5000) {
-    const alertClass = type === 'error' ? 'danger' : type;
-    const iconClass = type === 'success' ? 'check-circle' : 
-                     type === 'error' || type === 'danger' ? 'exclamation-triangle' : 
-                     type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+    const alertTypes = {
+        'success': 'bg-green-100 border-green-400 text-green-700',
+        'error': 'bg-red-100 border-red-400 text-red-700',
+        'warning': 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        'info': 'bg-blue-100 border-blue-400 text-blue-700'
+    };
+    
+    const iconTypes = {
+        'success': 'fa-check-circle',
+        'error': 'fa-exclamation-triangle',
+        'warning': 'fa-exclamation-triangle',
+        'info': 'fa-info-circle'
+    };
+    
+    const alertClass = alertTypes[type] || alertTypes['info'];
+    const iconClass = iconTypes[type] || iconTypes['info'];
     
     const alertHtml = `
-        <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fas fa-${iconClass} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="border px-4 py-3 rounded-lg mb-4 flex items-center ${alertClass}" role="alert">
+            <i class="fas ${iconClass} mr-2"></i>
+            <span>${message}</span>
+            <button class="ml-auto pl-3" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     `;
     
     // Remove existing alerts
-    $('.alert-dismissible').remove();
+    $('.alert').remove();
     
-    // Add new alert
-    $('.container-fluid').prepend(alertHtml);
+    // Add new alert to top of main content
+    $('.main-content .p-6').prepend(alertHtml);
     
     // Auto-hide after duration
     if (duration > 0) {
         setTimeout(() => {
-            $('.alert-dismissible').fadeOut('slow');
+            $('.alert').fadeOut('slow');
         }, duration);
     }
+}
+
+/**
+ * Initialize drag and drop for file upload
+ */
+function initializeDragAndDrop() {
+    $('.drag-drop-area').on('dragover', function(e) {
+        e.preventDefault();
+        $(this).addClass('border-blue-500 bg-blue-50');
+    });
+    
+    $('.drag-drop-area').on('dragleave', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-blue-500 bg-blue-50');
+    });
+    
+    $('.drag-drop-area').on('drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-blue-500 bg-blue-50');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        handleFileUpload(files, $(this));
+    });
+}
+
+/**
+ * Handle file upload
+ */
+function handleFileUpload(files, $container) {
+    // This function should be customized based on specific upload requirements
+    console.log('Files to upload:', files);
+    
+    // Example implementation
+    Array.from(files).forEach(file => {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            showAlert('ไฟล์ ' + file.name + ' มีขนาดใหญ่เกินไป (สูงสุด 10MB)', 'error');
+            return;
+        }
+        
+        // Add file to upload queue or process immediately
+        showAlert('เพิ่มไฟล์ ' + file.name + ' แล้ว', 'success', 2000);
+    });
 }
 
 /**
@@ -388,99 +414,6 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-/**
- * Debounce function
- */
-function debounce(func, wait, immediate) {
-    let timeout;
-    return function executedFunction() {
-        const context = this;
-        const args = arguments;
-        
-        const later = function() {
-            timeout = null;
-            if (!immediate) func.apply(context, args);
-        };
-        
-        const callNow = immediate && !timeout;
-        
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        
-        if (callNow) func.apply(context, args);
-    };
-}
-
-/**
- * Copy text to clipboard
- */
-function copyToClipboard(text) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-            showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
-        });
-    } else {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
-    }
-}
-
-/**
- * Show loading overlay
- */
-function showLoading(message = 'กำลังโหลด...') {
-    if ($('#loadingOverlay').length === 0) {
-        const overlay = `
-            <div id="loadingOverlay" class="loading-overlay">
-                <div class="loading-content">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <div class="loading-text mt-3">${message}</div>
-                </div>
-            </div>
-        `;
-        $('body').append(overlay);
-    }
-    $('#loadingOverlay').show();
-}
-
-/**
- * Hide loading overlay
- */
-function hideLoading() {
-    $('#loadingOverlay').hide();
-}
-
-/**
- * Validate form data
- */
-function validateForm(formData) {
-    const errors = [];
-    
-    // Add custom validation logic here
-    
-    return errors;
-}
-
-/**
- * Generate random string
- */
-function generateRandomString(length = 8) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
 }
 
 /**
@@ -509,43 +442,57 @@ function formatThaiDate(dateString, showTime = false) {
 }
 
 /**
- * Initialize drag and drop for file upload
+ * Copy text to clipboard
  */
-function initializeDragAndDrop(element, callback) {
-    const $element = $(element);
-    
-    $element.on('dragover', function(e) {
-        e.preventDefault();
-        $(this).addClass('drag-over');
-    });
-    
-    $element.on('dragleave', function(e) {
-        e.preventDefault();
-        $(this).removeClass('drag-over');
-    });
-    
-    $element.on('drop', function(e) {
-        e.preventDefault();
-        $(this).removeClass('drag-over');
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
+        });
+    } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showAlert('คัดลอกไปยัง clipboard แล้ว', 'success', 2000);
+    }
+}
+
+/**
+ * Debounce function
+ */
+function debounce(func, wait, immediate) {
+    let timeout;
+    return function executedFunction() {
+        const context = this;
+        const args = arguments;
         
-        const files = e.originalEvent.dataTransfer.files;
-        if (callback && typeof callback === 'function') {
-            callback(files);
-        }
-    });
+        const later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        
+        const callNow = immediate && !timeout;
+        
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        
+        if (callNow) func.apply(context, args);
+    };
 }
 
 // Export functions for global use
 window.AdminJS = {
     showAlert,
-    showLoading,
-    hideLoading,
     formatNumber,
     formatFileSize,
     formatThaiDate,
     copyToClipboard,
     debounce,
-    generateRandomString,
-    validateForm,
-    initializeDragAndDrop
+    showFieldError,
+    hideFieldError,
+    handleFileUpload
 };
