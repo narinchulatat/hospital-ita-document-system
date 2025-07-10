@@ -7,8 +7,8 @@ $(document).ready(function() {
     // Sidebar toggle functionality
     initializeSidebar();
     
-    // Initialize tooltips and popovers
-    initializeBootstrapComponents();
+    // Initialize tooltips and other components
+    initializeTailwindComponents();
     
     // Initialize AJAX setup
     initializeAjax();
@@ -37,18 +37,18 @@ function initializeAdmin() {
         }, 10000);
     });
     
-    // Initialize Select2
+    // Initialize Select2 with TailwindCSS styling
     if ($.fn.select2) {
         $('.select2').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
+            width: '100%',
+            dropdownCssClass: 'select2-tailwind'
         });
         
         $('.select2-multiple').select2({
-            theme: 'bootstrap-5',
             width: '100%',
             placeholder: 'เลือกรายการ...',
-            allowClear: true
+            allowClear: true,
+            dropdownCssClass: 'select2-tailwind'
         });
     }
     
@@ -129,24 +129,42 @@ function initializeSidebar() {
 }
 
 /**
- * Initialize Bootstrap components
+ * Initialize TailwindCSS components and plugins
  */
-function initializeBootstrapComponents() {
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+function initializeTailwindComponents() {
+    // Initialize Select2 with custom styling
+    if ($.fn.select2) {
+        $('.select2').select2({
+            width: '100%',
+            dropdownCssClass: 'select2-tailwind'
+        });
+        
+        $('.select2-multiple').select2({
+            width: '100%',
+            placeholder: 'เลือกรายการ...',
+            allowClear: true,
+            dropdownCssClass: 'select2-tailwind'
+        });
+    }
     
-    // Initialize popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    const popoverList = popoverTriggerList.map(function(popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-    
-    // Initialize modals with backdrop options
-    $('.modal').on('show.bs.modal', function() {
-        $(this).find('.modal-body').scrollTop(0);
+    // Initialize custom tooltips (replacing Bootstrap tooltips)
+    $('[data-tooltip]').each(function() {
+        const $this = $(this);
+        const title = $this.data('tooltip');
+        
+        $this.on('mouseenter', function() {
+            const tooltip = $('<div class="absolute z-50 px-2 py-1 text-sm text-white bg-gray-900 rounded shadow-lg whitespace-nowrap">')
+                .text(title)
+                .appendTo('body');
+            
+            const offset = $this.offset();
+            tooltip.css({
+                top: offset.top - tooltip.outerHeight() - 5,
+                left: offset.left + ($this.outerWidth() - tooltip.outerWidth()) / 2
+            });
+        }).on('mouseleave', function() {
+            $('.absolute.z-50').remove();
+        });
     });
 }
 
@@ -340,19 +358,23 @@ function initializeAutoHideAlerts() {
 }
 
 /**
- * Show alert message
+ * Show alert message with TailwindCSS styling
  */
 function showAlert(message, type = 'info', duration = 5000) {
-    const alertClass = type === 'error' ? 'danger' : type;
+    const alertClass = type === 'error' ? 'red' : 
+                     type === 'success' ? 'green' : 
+                     type === 'warning' ? 'yellow' : 'blue';
     const iconClass = type === 'success' ? 'check-circle' : 
                      type === 'error' || type === 'danger' ? 'exclamation-triangle' : 
                      type === 'warning' ? 'exclamation-triangle' : 'info-circle';
     
     const alertHtml = `
-        <div class="alert alert-${alertClass} alert-dismissible fade show" role="alert">
-            <i class="fas fa-${iconClass} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-dismissible bg-${alertClass}-50 border border-${alertClass}-200 text-${alertClass}-700 px-4 py-3 rounded-lg mb-4 flex items-center">
+            <i class="fas fa-${iconClass} mr-2"></i>
+            <span class="flex-1">${message}</span>
+            <button type="button" class="text-${alertClass}-500 hover:text-${alertClass}-700 ml-4" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     `;
     
@@ -360,7 +382,7 @@ function showAlert(message, type = 'info', duration = 5000) {
     $('.alert-dismissible').remove();
     
     // Add new alert
-    $('.container-fluid').prepend(alertHtml);
+    $('main > div:first-child, .container-fluid:first-child, .p-6:first-child').prepend(alertHtml);
     
     // Auto-hide after duration
     if (duration > 0) {
@@ -434,17 +456,15 @@ function copyToClipboard(text) {
 }
 
 /**
- * Show loading overlay
+ * Show loading overlay with TailwindCSS styling
  */
 function showLoading(message = 'กำลังโหลด...') {
     if ($('#loadingOverlay').length === 0) {
         const overlay = `
-            <div id="loadingOverlay" class="loading-overlay">
-                <div class="loading-content">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <div class="loading-text mt-3">${message}</div>
+            <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                    <div class="text-gray-700">${message}</div>
                 </div>
             </div>
         `;
