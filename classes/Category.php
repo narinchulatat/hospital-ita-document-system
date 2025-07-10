@@ -338,4 +338,31 @@ class Category {
         $result = $this->db->fetch($query, $params);
         return $result && $result['count'] > 0;
     }
+    
+    /**
+     * Get category by slug
+     */
+    public function getBySlug($slug) {
+        $query = "SELECT * FROM categories WHERE slug = ?";
+        return $this->db->fetch($query, [$slug]);
+    }
+    
+    /**
+     * Get descendants of a category
+     */
+    public function getDescendants($categoryId) {
+        $descendants = [];
+        
+        // Get direct children
+        $children = $this->db->fetchAll("SELECT * FROM categories WHERE parent_id = ?", [$categoryId]);
+        
+        foreach ($children as $child) {
+            $descendants[] = $child;
+            // Recursively get descendants
+            $childDescendants = $this->getDescendants($child['id']);
+            $descendants = array_merge($descendants, $childDescendants);
+        }
+        
+        return $descendants;
+    }
 }
