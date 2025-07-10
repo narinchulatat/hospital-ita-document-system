@@ -46,7 +46,7 @@ class Category {
     }
     
     /**
-     * Update category
+     * Update category with updated_by tracking
      */
     public function update($id, $data) {
         $oldCategory = $this->getById($id);
@@ -61,12 +61,13 @@ class Category {
             }
         }
         
-        $result = $this->db->update('categories', $data, ['id' => $id]);
-        
-        if ($result) {
-            // Log activity
-            logActivity(ACTION_UPDATE, 'categories', $id, $oldCategory, $data);
+        // Set updated_by and updated_at
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        if (isset($_SESSION['user_id'])) {
+            $data['updated_by'] = $_SESSION['user_id'];
         }
+        
+        $result = $this->db->update('categories', $data, ['id' => $id]);
         
         return $result;
     }
@@ -219,17 +220,19 @@ class Category {
     }
     
     /**
-     * Update sort order
+     * Update sort order with updated_by tracking
      */
     public function updateSortOrder($categoryId, $sortOrder) {
-        $result = $this->db->update('categories', ['sort_order' => $sortOrder], ['id' => $categoryId]);
+        $data = [
+            'sort_order' => $sortOrder,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
         
-        if ($result) {
-            // Log activity
-            logActivity(ACTION_UPDATE, 'categories', $categoryId, null, ['sort_order' => $sortOrder]);
+        if (isset($_SESSION['user_id'])) {
+            $data['updated_by'] = $_SESSION['user_id'];
         }
         
-        return $result;
+        return $this->db->update('categories', $data, ['id' => $categoryId]);
     }
     
     /**

@@ -7,6 +7,8 @@
 class Database {
     private $pdo;
     private static $instance = null;
+    private $transactionLevel = 0;
+    private $statementCache = [];
     
     private function __construct() {
         try {
@@ -30,16 +32,25 @@ class Database {
     }
     
     /**
-     * Execute a prepared statement
+     * Execute a prepared statement with caching
      */
     public function execute($query, $params = []) {
         try {
-            $stmt = $this->pdo->prepare($query);
+            // Use cached statement if available
+            $cacheKey = md5($query);
+            if (isset($this->statementCache[$cacheKey])) {
+                $stmt = $this->statementCache[$cacheKey];
+            } else {
+                $stmt = $this->pdo->prepare($query);
+                // Cache the statement for reuse
+                $this->statementCache[$cacheKey] = $stmt;
+            }
+            
             $stmt->execute($params);
             return $stmt;
         } catch (PDOException $e) {
-            error_log("Query execution failed: " . $e->getMessage());
-            throw new Exception("Query execution failed");
+            error_log("Query execution failed: " . $e->getMessage() . " | Query: " . $query);
+            throw new Exception("Query execution failed: " . $e->getMessage());
         }
     }
     
@@ -67,24 +78,43 @@ class Database {
     }
     
     /**
-     * Begin transaction
+     * Begin transaction with nesting support
      */
     public function beginTransaction() {
-        return $this->pdo->beginTransaction();
+        if ($this->transactionLevel == 0) {
+            $result = $this->pdo->beginTransaction();
+        } else {
+            // Use savepoints for nested transactions
+            $result = $this->pdo->exec("SAVEPOINT trans_level_" . $this->transactionLevel);
+        }
+        $this->transactionLevel++;
+        return $result;
     }
     
     /**
-     * Commit transaction
+     * Commit transaction with nesting support
      */
     public function commit() {
-        return $this->pdo->commit();
+        $this->transactionLevel--;
+        if ($this->transactionLevel == 0) {
+            return $this->pdo->commit();
+        } else {
+            // Release savepoint
+            return $this->pdo->exec("RELEASE SAVEPOINT trans_level_" . $this->transactionLevel);
+        }
     }
     
     /**
-     * Rollback transaction
+     * Rollback transaction with nesting support
      */
     public function rollback() {
-        return $this->pdo->rollback();
+        $this->transactionLevel--;
+        if ($this->transactionLevel == 0) {
+            return $this->pdo->rollback();
+        } else {
+            // Rollback to savepoint
+            return $this->pdo->exec("ROLLBACK TO SAVEPOINT trans_level_" . $this->transactionLevel);
+        }
     }
     
     /**
@@ -117,57 +147,125 @@ class Database {
     }
     
     /**
-     * Insert data into table
+     * Insert data into table with better error handling
      */
     public function insert($tableName, $data) {
-        $fields = array_keys($data);
-        $placeholders = array_fill(0, count($fields), '?');
-        
-        $query = "INSERT INTO `{$tableName}` (`" . implode('`, `', $fields) . "`) VALUES (" . implode(', ', $placeholders) . ")";
-        
-        $this->execute($query, array_values($data));
-        return $this->lastInsertId();
+        try {
+            $fields = array_keys($data);
+            $placeholders = array_fill(0, count($fields), '?');
+            
+            $query = "INSERT INTO `{$tableName}` (`" . implode('`, `', $fields) . "`) VALUES (" . implode(', ', $placeholders) . ")";
+            
+            $this->execute($query, array_values($data));
+            return $this->lastInsertId();
+        } catch (Exception $e) {
+            error_log("Insert failed for table {$tableName}: " . $e->getMessage());
+            throw new Exception("Insert operation failed: " . $e->getMessage());
+        }
     }
     
     /**
-     * Update data in table
+     * Update data in table with better error handling
      */
     public function update($tableName, $data, $conditions) {
-        $setClause = [];
-        $params = [];
-        
-        foreach ($data as $field => $value) {
-            $setClause[] = "`{$field}` = ?";
-            $params[] = $value;
+        try {
+            if (empty($conditions)) {
+                throw new Exception("Update operation requires conditions to prevent accidental mass updates");
+            }
+            
+            $setClause = [];
+            $params = [];
+            
+            foreach ($data as $field => $value) {
+                $setClause[] = "`{$field}` = ?";
+                $params[] = $value;
+            }
+            
+            $whereClause = [];
+            foreach ($conditions as $field => $value) {
+                $whereClause[] = "`{$field}` = ?";
+                $params[] = $value;
+            }
+            
+            $query = "UPDATE `{$tableName}` SET " . implode(', ', $setClause) . " WHERE " . implode(' AND ', $whereClause);
+            
+            $stmt = $this->execute($query, $params);
+            return $stmt->rowCount();
+        } catch (Exception $e) {
+            error_log("Update failed for table {$tableName}: " . $e->getMessage());
+            throw new Exception("Update operation failed: " . $e->getMessage());
         }
-        
-        $whereClause = [];
-        foreach ($conditions as $field => $value) {
-            $whereClause[] = "`{$field}` = ?";
-            $params[] = $value;
-        }
-        
-        $query = "UPDATE `{$tableName}` SET " . implode(', ', $setClause) . " WHERE " . implode(' AND ', $whereClause);
-        
-        $stmt = $this->execute($query, $params);
-        return $stmt->rowCount();
     }
     
     /**
-     * Delete data from table
+     * Delete data from table with better error handling
      */
     public function delete($tableName, $conditions) {
-        $whereClause = [];
-        $params = [];
-        
-        foreach ($conditions as $field => $value) {
-            $whereClause[] = "`{$field}` = ?";
-            $params[] = $value;
+        try {
+            if (empty($conditions)) {
+                throw new Exception("Delete operation requires conditions to prevent accidental mass deletion");
+            }
+            
+            $whereClause = [];
+            $params = [];
+            
+            foreach ($conditions as $field => $value) {
+                $whereClause[] = "`{$field}` = ?";
+                $params[] = $value;
+            }
+            
+            $query = "DELETE FROM `{$tableName}` WHERE " . implode(' AND ', $whereClause);
+            
+            $stmt = $this->execute($query, $params);
+            return $stmt->rowCount();
+        } catch (Exception $e) {
+            error_log("Delete failed for table {$tableName}: " . $e->getMessage());
+            throw new Exception("Delete operation failed: " . $e->getMessage());
         }
+    }
+    
+    /**
+     * Check if we're in a transaction
+     */
+    public function inTransaction() {
+        return $this->transactionLevel > 0;
+    }
+    
+    /**
+     * Get current transaction level
+     */
+    public function getTransactionLevel() {
+        return $this->transactionLevel;
+    }
+    
+    /**
+     * Clear statement cache
+     */
+    public function clearStatementCache() {
+        $this->statementCache = [];
+    }
+    
+    /**
+     * Execute multiple queries in a transaction
+     */
+    public function executeTransaction($queries) {
+        $this->beginTransaction();
         
-        $query = "DELETE FROM `{$tableName}` WHERE " . implode(' AND ', $whereClause);
-        
-        $stmt = $this->execute($query, $params);
-        return $stmt->rowCount();
+        try {
+            $results = [];
+            foreach ($queries as $query) {
+                if (is_array($query)) {
+                    $results[] = $this->execute($query['sql'], $query['params'] ?? []);
+                } else {
+                    $results[] = $this->execute($query);
+                }
+            }
+            
+            $this->commit();
+            return $results;
+        } catch (Exception $e) {
+            $this->rollback();
+            throw $e;
+        }
     }
 }

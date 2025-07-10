@@ -12,18 +12,18 @@ class Notification {
     }
     
     /**
-     * Create new notification
+     * Create new notification with correct enum values
      */
-    public function create($userId, $title, $message, $type = NOTIF_TYPE_INFO, $actionUrl = null) {
-        $data = [
+    public function create($userId, $type, $title, $message, $data = null) {
+        $notificationData = [
             'user_id' => $userId,
+            'type' => $type,  // Use database enum: 'document_uploaded','document_approved','document_rejected','document_expiring','system_alert'
             'title' => $title,
             'message' => $message,
-            'type' => $type,
-            'action_url' => $actionUrl
+            'data' => $data ? json_encode($data) : null
         ];
         
-        return $this->db->insert('notifications', $data);
+        return $this->db->insert('notifications', $notificationData);
     }
     
     /**
@@ -95,11 +95,11 @@ class Notification {
     /**
      * Send notification to multiple users
      */
-    public function sendToUsers($userIds, $title, $message, $type = NOTIF_TYPE_INFO, $actionUrl = null) {
+    public function sendToUsers($userIds, $type, $title, $message, $data = null) {
         $results = [];
         
         foreach ($userIds as $userId) {
-            $results[] = $this->create($userId, $title, $message, $type, $actionUrl);
+            $results[] = $this->create($userId, $type, $title, $message, $data);
         }
         
         return $results;
@@ -124,15 +124,47 @@ class Notification {
     }
     
     /**
-     * Clean old notifications
+     * Clean old notifications and expired ones
      */
     public function cleanOldNotifications($daysOld = 30) {
         $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$daysOld} days"));
         
-        $query = "DELETE FROM notifications WHERE created_at < ? AND is_read = 1";
-        $this->db->execute($query, [$cutoffDate]);
+        // Delete read notifications older than specified days
+        $query1 = "DELETE FROM notifications WHERE created_at < ? AND is_read = 1";
+        $this->db->execute($query1, [$cutoffDate]);
+        
+        // Delete expired notifications
+        $query2 = "DELETE FROM notifications WHERE expires_at IS NOT NULL AND expires_at < NOW()";
+        $this->db->execute($query2);
         
         return true;
+    }
+    
+    /**
+     * Create document-related notification using correct enum
+     */
+    public function createDocumentNotification($action, $documentId, $documentTitle, $recipientUserId, $senderName = null) {
+        $typeMap = [
+            'uploaded' => 'document_uploaded',
+            'approved' => 'document_approved', 
+            'rejected' => 'document_rejected',
+            'expiring' => 'document_expiring'
+        ];
+        
+        $type = $typeMap[$action] ?? 'system_alert';
+        
+        $title = "การดำเนินการเอกสาร";
+        $message = $senderName ? 
+            "{$senderName} ได้ดำเนินการ {$action} เอกสาร: \"{$documentTitle}\"" : 
+            "เอกสาร \"{$documentTitle}\" ได้รับการ {$action}";
+        
+        $data = [
+            'document_id' => $documentId,
+            'action' => $action,
+            'sender' => $senderName
+        ];
+        
+        return $this->create($recipientUserId, $type, $title, $message, $data);
     }
     
     /**
@@ -152,77 +184,12 @@ class Notification {
             $stats['unread'] = $this->db->getRowCount('notifications', ['is_read' => 0]);
             $stats['read'] = $stats['total'] - $stats['unread'];
             
-            // Stats by type
-            foreach ([NOTIF_TYPE_INFO, NOTIF_TYPE_SUCCESS, NOTIF_TYPE_WARNING, NOTIF_TYPE_ERROR] as $type) {
+            // Stats by type - using correct enum values
+            foreach (['document_uploaded', 'document_approved', 'document_rejected', 'document_expiring', 'system_alert'] as $type) {
                 $stats["type_{$type}"] = $this->db->getRowCount('notifications', ['type' => $type]);
             }
         }
         
         return $stats;
-    }
-    
-    /**
-     * Create document notification
-     */
-    public function createDocumentNotification($action, $documentId, $documentTitle, $recipientUserId, $senderName = null) {
-        $actionMessages = [
-            'uploaded' => 'อัปโหลดเอกสารใหม่',
-            'approved' => 'อนุมัติเอกสาร',
-            'rejected' => 'ไม่อนุมัติเอกสาร',
-            'updated' => 'แก้ไขเอกสาร'
-        ];
-        
-        $actionTypes = [
-            'uploaded' => NOTIF_TYPE_INFO,
-            'approved' => NOTIF_TYPE_SUCCESS,
-            'rejected' => NOTIF_TYPE_WARNING,
-            'updated' => NOTIF_TYPE_INFO
-        ];
-        
-        $title = $actionMessages[$action] ?? 'การดำเนินการเอกสาร';
-        $type = $actionTypes[$action] ?? NOTIF_TYPE_INFO;
-        
-        $message = $senderName ? 
-            "{$senderName} {$title}: \"{$documentTitle}\"" : 
-            "{$title}: \"{$documentTitle}\"";
-        
-        $actionUrl = "/documents/view.php?id={$documentId}";
-        
-        return $this->create($recipientUserId, $title, $message, $type, $actionUrl);
-    }
-    
-    /**
-     * Create user notification
-     */
-    public function createUserNotification($action, $username, $recipientUserId, $senderName = null) {
-        $actionMessages = [
-            'created' => 'สร้างผู้ใช้ใหม่',
-            'updated' => 'แก้ไขข้อมูลผู้ใช้',
-            'deleted' => 'ลบผู้ใช้',
-            'activated' => 'เปิดใช้งานผู้ใช้',
-            'deactivated' => 'ปิดใช้งานผู้ใช้'
-        ];
-        
-        $title = $actionMessages[$action] ?? 'การจัดการผู้ใช้';
-        $message = $senderName ? 
-            "{$senderName} {$title}: {$username}" : 
-            "{$title}: {$username}";
-        
-        return $this->create($recipientUserId, $title, $message, NOTIF_TYPE_INFO);
-    }
-    
-    /**
-     * Create system notification
-     */
-    public function createSystemNotification($title, $message, $type = NOTIF_TYPE_INFO, $sendToAllAdmins = true) {
-        if ($sendToAllAdmins) {
-            return $this->sendToAdmins($title, $message, $type);
-        } else {
-            // Send to all users
-            $query = "SELECT id FROM users WHERE status = 'active'";
-            $users = $this->db->fetchAll($query);
-            $userIds = array_column($users, 'id');
-            return $this->sendToUsers($userIds, $title, $message, $type);
-        }
     }
 }
