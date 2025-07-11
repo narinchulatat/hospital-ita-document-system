@@ -41,6 +41,7 @@ $currentPage = getCurrentPage();
     
     <!-- Admin CSS -->
     <link href="<?= BASE_URL ?>/admin/assets/css/admin.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/admin/assets/css/sidebar.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/admin/assets/css/dashboard.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/admin/assets/css/tables.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/admin/assets/css/forms.css" rel="stylesheet">
@@ -65,49 +66,16 @@ $currentPage = getCurrentPage();
     </style>
 </head>
 <body class="font-sarabun bg-gray-50">
-    <!-- Sidebar -->
-    <nav class="fixed top-0 left-0 w-64 h-screen bg-gradient-to-b from-slate-800 to-slate-900 shadow-lg z-50 transition-all duration-300" id="sidebar">
-        <div class="p-4 border-b border-white/10 text-center">
-            <h4 class="text-white text-xl font-semibold">
-                <i class="fas fa-hospital mr-2"></i>
-                <span class="brand-text">Admin Panel</span>
-            </h4>
-        </div>
-        
-        <div class="py-4">
-            <?php foreach ($adminMenu as $key => $menu): ?>
-                <?php if (hasMenuPermission($menu['permission'])): ?>
-                    <div class="nav-item">
-                        <a href="<?= BASE_URL . $menu['url'] ?>" 
-                           class="flex items-center px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 <?= isMenuActive($menu['url'], $menu['submenu'] ?? []) ? 'bg-white/20 text-white border-r-3 border-blue-400' : '' ?>">
-                            <i class="fas <?= $menu['icon'] ?> w-5 text-center mr-3"></i>
-                            <span class="nav-text"><?= $menu['title'] ?></span>
-                        </a>
-                        
-                        <?php if (!empty($menu['submenu']) && isMenuActive($menu['url'], $menu['submenu'])): ?>
-                            <div class="bg-black/20">
-                                <?php foreach ($menu['submenu'] as $subkey => $submenu): ?>
-                                    <a href="<?= BASE_URL . $submenu['url'] ?>" 
-                                       class="flex items-center pl-12 pr-4 py-2 text-white/70 hover:bg-white/10 hover:text-white text-sm transition-all duration-200 <?= getCurrentPage() === $submenu['url'] ? 'bg-white/20 text-white' : '' ?>">
-                                        <i class="fas fa-circle text-xs mr-3"></i>
-                                        <span class="nav-text"><?= $submenu['title'] ?></span>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-    </nav>
+    <!-- Include Unified Sidebar -->
+    <?php include 'sidebar.php'; ?>
     
     <!-- Main Content -->
-    <div class="ml-64 transition-all duration-300" id="main-content">
+    <div class="main-content" id="main-content">
         <!-- Top Navigation -->
         <nav class="bg-white shadow-sm border-b border-gray-200">
             <div class="px-6">
                 <div class="flex items-center justify-between h-16">
-                    <button class="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors" id="sidebarToggle" type="button">
+                    <button class="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 transition-colors lg:hidden" id="mobileMenuToggle" type="button">
                         <i class="fas fa-bars"></i>
                     </button>
                     
@@ -164,4 +132,4 @@ $currentPage = getCurrentPage();
             <?php endif; ?>
             
             <!-- Flash Messages -->
-            <?php include 'alerts.php'; ?>
+            <?php include '../components/alerts.php'; ?>
