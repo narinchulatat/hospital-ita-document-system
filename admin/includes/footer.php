@@ -16,23 +16,21 @@
     
     <!-- Admin JS -->
     <script src="<?= BASE_URL ?>/admin/assets/js/admin.js"></script>
+    <script src="<?= BASE_URL ?>/admin/assets/js/sidebar.js"></script>
     <script src="<?= BASE_URL ?>/admin/assets/js/dashboard.js"></script>
     <script src="<?= BASE_URL ?>/admin/assets/js/tables.js"></script>
     <script src="<?= BASE_URL ?>/admin/assets/js/forms.js"></script>
     
     <script>
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-            
-            // Save state to localStorage
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('sidebarCollapsed', isCollapsed);
-        });
+        // Mobile menu toggle functionality
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function() {
+                if (window.sidebarManager) {
+                    window.sidebarManager.toggle();
+                }
+            });
+        }
         
         // User dropdown toggle
         document.getElementById('userDropdown').addEventListener('click', function() {
